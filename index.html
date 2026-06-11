@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>運輸系統</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>歡迎來到運輸系統！</h1>
+    <p>這是我用 VS Code 寫的第一個網頁。</p>
+    <div style="margin: 15px 0;">
+        <input type="text" id="startInput" placeholder="請輸入起始地（如：五支部運輸兵群北大營區）" style="padding: 5px; width: 200px;">
+        <span> 到 </span>
+        <input type="text" id="endInput" placeholder="請輸入目的地（如：台中火車站）" style="padding: 5px; width: 200px;">
+        <button id="routeBtn">規劃路線</button>
+    </div>
+    <div id="map"></div>
+    <script src="script.js" defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqnZRFp5mWLKUUmh-v0SjSRBi9s-lsAQk&loading=async&callback=initMap" defer></script>
+    
+    <button id="clickBtn">點我看看</button>
+    <button id="togglePoiBtn">顯示景點資訊</button>
+
+    
+</body>
+</html>

@@ -1,0 +1,32 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5;
+    text-align: center;
+    padding-top: 50px;
+}
+
+h1 {
+    color: #333;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#map {
+    width: 80%;          /* 寬度佔螢幕的 80% */
+    height: 450px;       /* 必須設定明確的高度 */
+    margin: 30px auto;   /* 置中，並與上下拉開距離 */
+    border-radius: 12px; /* 圓角 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 漂亮的陰影 */
+}
