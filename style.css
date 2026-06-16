@@ -30,3 +30,74 @@ button:hover {
     border-radius: 12px; /* 圓角 */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 漂亮的陰影 */
 }
+
+/* ===== 🚀 新增：保全四分格電視牆樣式 ===== */
+#security-panel {
+    width: 80%;             /* 寬度配合地圖一樣佔 80% */
+    max-width: 600px;       /* 設定最大寬度，避免在寬螢幕上圖片被拉得太扁 */
+    margin: 0 auto 30px auto; /* 自動置中，並與下方按鈕拉開距離 */
+    background-color: #1a1a1a; /* 深灰色背景，很有保全控制室的感覺 */
+    color: #00ff00;         /* 螢光綠文字 */
+    padding: 15px;
+    border: 2px solid #333;
+    border-radius: 12px;    /* 配合地圖的圓角 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* 比地圖更重的深色陰影 */
+    font-family: 'Courier New', Courier, monospace; /* 科技感等寬字體 */
+}
+
+#security-panel h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    letter-spacing: 1px;
+}
+
+/* 2x2 格子核心架構 */
+.wall-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 橫向兩格，平分寬度 */
+    grid-template-rows: repeat(2, 1fr);    /* 縱向兩格，平分高度 */
+    gap: 8px;                              /* 格子之間的縫隙 */
+}
+/* 每個獨立的監視器畫面框 */
+.monitor-cell {
+    background-color: #000;    /* 沒訊號時純黑 */
+    border: 1px solid #444;
+    border-radius: 6px;
+    aspect-ratio: 16 / 9;      /* 強制鎖定台灣監視器標準的 16:9 比例 */
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;   /* 讓沒訊號的文字水平置中 */
+    align-items: center;       /* 讓沒訊號的文字垂直置中 */
+}
+
+/* 監視器即時影像本身 */
+.monitor-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;         /* 讓影像完美填滿格子且不變形 */
+}
+
+/* 沒訊號時的文字樣式（NO SIGNAL） */
+.monitor-cell .placeholder {
+    color: #444;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 2px;
+}
+/* 畫面底部的監視器名稱綠色標籤 */
+.monitor-cell .cam-name-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.75); /* 半透明黑底，確保字體清晰 */
+    color: #00ff00;                        /* 螢光綠字 */
+    font-size: 11px;
+    padding: 4px 6px;
+    width: 100%;
+    box-sizing: border-box;                /* 防止內邊距把寬度撐爆 */
+    text-align: left;                      /* 名字靠左對齊 */
+    white-space: nowrap;                   /* 名字太長不換行 */
+    overflow: hidden;                      /* 超出範圍隱藏 */
+    text-overflow: ellipsis;               /* 超出時末端顯示 ... */
+}

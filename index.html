@@ -16,12 +16,23 @@
         <button id="routeBtn">規劃路線</button>
     </div>
     <div id="map"></div>
-    <script src="script.js" defer></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqnZRFp5mWLKUUmh-v0SjSRBi9s-lsAQk&loading=async&callback=initMap" defer></script>
-    
-    <button id="clickBtn">點我看看</button>
-    <button id="togglePoiBtn">顯示景點資訊</button>
+    <div id="security-panel">
+        <h3>戰略中心 - 路線監視面板</h3>
+        <div class="wall-container">
+            <div class="monitor-cell" id="cam-wall-0"><div class="placeholder">NO SIGNAL</div></div>
+            <div class="monitor-cell" id="cam-wall-1"><div class="placeholder">NO SIGNAL</div></div>
+            <div class="monitor-cell" id="cam-wall-2"><div class="placeholder">NO SIGNAL</div></div>
+            <div class="monitor-cell" id="cam-wall-3"><div class="placeholder">NO SIGNAL</div></div>
+        </div>
+    </div>
 
+    <div style="margin-top: 15px;">
+        <button id="clickBtn">點我看看</button>
+        <button id="togglePoiBtn">顯示景點資訊</button>
+    </div>
+        
+    <script src="script.js" defer></script>
     
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqnZRFp5mWLKUUmh-v0SjSRBi9s-lsAQk&loading=async&libraries=geometry&callback=initMap" defer></script>
 </body>
 </html>
