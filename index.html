@@ -9,30 +9,41 @@
 <body>
     <h1>歡迎來到運輸系統！</h1>
     <p>這是我用 VS Code 寫的第一個網頁。</p>
-    <div style="margin: 15px 0;">
+    
+    <div style="margin: 15px 0; display: flex; align-items: center; gap: 10px;">
         <input type="text" id="startInput" placeholder="請輸入起始地（如：五支部運輸兵群北大營區）" style="padding: 5px; width: 200px;">
         <span> 到 </span>
         <input type="text" id="endInput" placeholder="請輸入目的地（如：台中火車站）" style="padding: 5px; width: 200px;">
         <button id="routeBtn">規劃路線</button>
+
+        <label style="color: #00ff00; font-family: monospace; cursor: pointer; display: flex; align-items: center; gap: 5px; margin-left: 10px;">
+            <input type="checkbox" id="gps-tracking-toggle" onchange="toggleUserLocation(this)">
+                📡 啟動即時 GPS 定位與導航追蹤
+        </label>
     </div>
+
     <div id="map"></div>
+
     <div id="security-panel">
         <h3>戰略中心 - 路線監視面板</h3>
         <div class="wall-container">
-            <div class="monitor-cell" id="cam-wall-0"><div class="placeholder">NO SIGNAL</div></div>
-            <div class="monitor-cell" id="cam-wall-1"><div class="placeholder">NO SIGNAL</div></div>
-            <div class="monitor-cell" id="cam-wall-2"><div class="placeholder">NO SIGNAL</div></div>
-            <div class="monitor-cell" id="cam-wall-3"><div class="placeholder">NO SIGNAL</div></div>
+            <div class="monitor-cell" id="slot-0"><span class="placeholder">NO SIGNAL</span></div>
+            <div class="monitor-cell" id="slot-1"><span class="placeholder">NO SIGNAL</span></div>
+            <div class="monitor-cell" id="slot-2"><span class="placeholder">NO SIGNAL</span></div>
+            <div class="monitor-cell" id="slot-3"><span class="placeholder">NO SIGNAL</span></div>
         </div>
     </div>
 
     <div style="margin-top: 15px;">
         <button id="clickBtn">點我看看</button>
         <button id="togglePoiBtn">顯示景點資訊</button>
+        <button id="clearWallBtn" onclick="clearAllWallSlots()">一鍵清空電視牆</button>
     </div>
+
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
         
     <script src="script.js" defer></script>
     
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqnZRFp5mWLKUUmh-v0SjSRBi9s-lsAQk&loading=async&libraries=geometry&callback=initMap" defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqnZRFp5mWLKUUmh-v0SjSRBi9s-lsAQk&loading=async&libraries=marker,geometry&callback=initMap" async defer></script>
 </body>
 </html>
