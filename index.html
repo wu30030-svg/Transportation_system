@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>運輸系統</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>歡迎來到運輸系統</h1>
+    <p>這是我用 VS Code 寫的第一個網頁。</p>
+    
+    <div style="margin: 15px 0; display: flex; align-items: center; gap: 10px;">
+        <input type="text" id="startInput" placeholder="請輸入起始地（如：五支部運輸兵群北大營區）" style="padding: 5px; width: 200px;">
+        <span> 到 </span>
+        <input type="text" id="endInput" placeholder="請輸入目的地（如：台中火車站）" style="padding: 5px; width: 200px;">
+        <button id="routeBtn">規劃路線</button>
+        <button id="btn-open-vehicle-settings" onclick="openVehicleModal()">⚙️ 車型設定</button>
+
+        <label style="color: #00ff00; font-family: monospace; cursor: pointer; display: flex; align-items: center; gap: 5px; margin-left: 10px;">
+            <input type="checkbox" id="gps-tracking-toggle" onchange="toggleUserLocation(this)">
+                📡 啟動即時 GPS 定位與導航追蹤
+        </label>
+    </div>
+
+    <div id="map"></div>
+
+    <div id="security-panel">
+        <h3>戰略中心 - 路線監視面板</h3>
+        <div class="wall-container">
+            <div class="monitor-cell" id="slot-0"><span class="placeholder">NO SIGNAL</span></div>
+            <div class="monitor-cell" id="slot-1"><span class="placeholder">NO SIGNAL</span></div>
+            <div class="monitor-cell" id="slot-2"><span class="placeholder">NO SIGNAL</span></div>
+            <div class="monitor-cell" id="slot-3"><span class="placeholder">NO SIGNAL</span></div>
+        </div>
+    </div>
+
+    <div style="margin-top: 15px;">
+        <button id="clickBtn">點我看看</button>
+        <button id="togglePoiBtn">顯示景點資訊</button>
+        <button id="clearWallBtn" onclick="clearAllWallSlots()">一鍵清空電視牆</button>
+    </div>
+    
+    <div id="vehicle-modal-overlay" class="modal-overlay" onclick="closeVehicleModal()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>🎯 車型與路線設定</h3>
+                <button class="modal-close" onclick="closeVehicleModal()">✕</button>
+            </div>
+
+            <div class="form-group">
+                <label for="vehicle-type">選擇車型模式：</label>
+                <select id="vehicle-type" onchange="toggleTruckOptions()">
+                    <option value="car">🚗 一般小客車</option>
+                    <option value="truck">🚛 大型卡車 / 特種車輛</option>
+                </select>
+            </div>
+
+            <div id="truck-options" class="truck-options">
+                <div class="form-group">
+                    <label>車高 (公尺)：<input type="number" id="truck-height" value="4.0" step="0.1"></label>
+                </div>
+                <div class="form-group">
+                    <label>車寬 (公尺)：<input type="number" id="truck-width" value="2.5" step="0.1"></label>
+                </div>
+                <div class="form-group">
+                    <label>總重 (公噸)：<input type="number" id="truck-weight" value="20" step="1"></label>
+                </div>
+                <div class="form-group">
+                    <label>載運危險品：
+                        <select id="truck-load-type">
+                            <option value="">無</option>
+                            <option value="USHazmatClass3">Class 3 易燃液體</option>
+                            <option value="otherHazmat">其他危險管制物</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+
+            <button id="btn-confirm-vehicle" onclick="closeVehicleModal()">✅ 確認設定，關閉視窗</button>
+        </div>
+    </div>
+
+    <script>
+    function openVehicleModal() {
+        document.getElementById('vehicle-modal-overlay').classList.add('active');
+    }
+    function closeVehicleModal() {
+        document.getElementById('vehicle-modal-overlay').classList.remove('active');
+    }
+    function toggleTruckOptions() {
+        const vehicleType = document.getElementById('vehicle-type').value;
+        document.getElementById('truck-options').style.display = (vehicleType === 'truck') ? 'block' : 'none';
+    }
+    </script>
+
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+    
+    <script src="global-state.js"></script>
+    <script src="utils.js"></script>
+    <script src="monitor-wall.js"></script>
+    <script src="gps-tracker.js"></script>
+    <script src="cctv-renderer.js"></script>
+    <script src="route-navigation.js"></script>
+    <script src="map-core.js"></script>
+    
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqnZRFp5mWLKUUmh-v0SjSRBi9s-lsAQk&loading=async&libraries=marker,geometry&callback=initMap" async defer></script>
+</body>
+</html>
