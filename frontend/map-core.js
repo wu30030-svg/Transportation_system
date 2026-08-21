@@ -18,7 +18,6 @@ async function initMap() {
         disableDefaultUI: false
     });
 
-    await fetchCameraData();
     setupToggleStyleButton();
     setupRouteButton();
     setupWallDragAndDrop();
@@ -31,16 +30,11 @@ async function initMap() {
     });
 
     // 綁定動態 viewport 渲染
-    map.addListener("idle", () => {
+    map.addListener("idle", async () => {
         console.log("[效能動態] 地圖觸發 idle，更新可視區域標記...");
-        updateMarkersInViewport();
+        await fetchCameraData();
     });
 
-    // 300ms 雙重保險強制渲染
-    setTimeout(() => {
-        console.log("[效能動態] 啟動初始化強行渲染...");
-        updateMarkersInViewport();
-    }, 300);
 }
 
 /**
@@ -157,14 +151,12 @@ function setupToggleStyleButton() {
 }
 
 function setupRouteButton() {
-    document.getElementById("routeBtn")?.addEventListener("click", calculateAndDisplayRoute);
-    document.getElementById("clearRouteBtn")?.addEventListener("click", () => {
-        if (currentRoutePolyline) {
-            currentRoutePolyline.setMap(null);
-            currentRoutePolyline = null;
-        }
-        resetMapToAllCameras();
-    });
+    document
+        .getElementById("routeBtn")
+        ?.addEventListener("click", calculateAndDisplayRoute);
+    document
+        .getElementById("clearRouteBtn")
+        ?.addEventListener("click", resetMapToAllCameras);
 }
 
 // 綁定全域

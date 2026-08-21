@@ -1,0 +1,8 @@
+{
+  "vehicleNumber": "軍車-002",
+  "vehicleType": "MILITARY_MEDIUM_TRUCK",
+  "vehicleHeight": 3.2,
+  "vehicleWidth": 2.5,
+  "vehicleWeight": 12000,
+  "vehicleLoadType": "OTHER"
+}

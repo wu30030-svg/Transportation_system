@@ -10,6 +10,7 @@ async function calculateAndDisplayRoute() {
     const start = document.getElementById("startInput").value;
     const end = document.getElementById("endInput").value;
     const selectedVehicleType = document.getElementById("vehicle-type")?.value || 'car';
+    document.getElementById("clearRouteBtn").style.display = "inline-block";
 
     if (!start || !end) {
         window.alert("請輸入起始地與目的地！");
@@ -47,7 +48,11 @@ async function calculateAndDisplayRoute() {
     }
 
     drawRoutePolyline(decodedPath, true); // true = 可拖曳編輯
-    filterAndShowRouteCameras(decodedPath);
+    const result = await fetchRouteCameras(decodedPath);
+
+    console.log(result);
+
+    renderRouteMarkers(result.cameras);
 }
 
 /**
@@ -135,114 +140,72 @@ function geocodeAddress(address) {
  * 繪製導航折線 (可選是否開放拖曳編輯)
  */
 function drawRoutePolyline(path, editable = false) {
+
     currentRoutePolyline = new google.maps.Polyline({
-        path: path,
+
+        path,
+
         geodesic: true,
+
         strokeColor: "#4285F4",
+
         strokeOpacity: 0.8,
+
         strokeWeight: 6,
-        editable: editable,
+
+        editable,
+
         draggable: editable,
-        map: map
+
+        map
+
     });
 
-    const path_ = currentRoutePolyline.getPath();
-    google.maps.event.addListener(path_, 'set_at', onRouteEdited);
-    google.maps.event.addListener(path_, 'insert_at', onRouteEdited);
+    const mvcPath = currentRoutePolyline.getPath();
+
+    mvcPath.addListener("set_at", onRouteEdited);
+
+    mvcPath.addListener("insert_at", onRouteEdited);
+
 }
 
-function onRouteEdited() {
+async function onRouteEdited(){
+
     const newPath = currentRoutePolyline.getPath().getArray();
-    filterAndShowRouteCameras(newPath);
+
+    const result = await fetchRouteCameras(newPath);
+
+    renderRouteMarkers(result.cameras);
+
 }
 
-/**
- * 根據導航路線篩選並顯示周圍的監視器
- */
-function filterAndShowRouteCameras(path) {
-    if (!path || path.length === 0) {
-        console.warn("[導航篩選] 傳入的軌跡路徑為空，無法進行篩選。");
-        return;
-    }
+async function resetMapToAllCameras() {
 
-    const normalizedPath = path.map(pt => {
-        const lat = typeof pt.lat === 'function' ? pt.lat() : (pt.lat ?? pt.latitude);
-        const lng = typeof pt.lng === 'function' ? pt.lng() : (pt.lng ?? pt.longitude);
-        return { lat: Number(lat), lng: Number(lng) };
-    }).filter(pt => !isNaN(pt.lat) && !isNaN(pt.lng));
+    console.log("取消導航");
 
-  
-    if (normalizedPath.length === 0) {
-        console.error("[導航篩選] Path 座標解析失敗，無有效點位。");
-        return;
-    }
-
-  // 2. 計算 AABB 外接矩形 Bounding Box (加上安全 margin 緩衝)
-  let minLat = Infinity, maxLat = -Infinity;
-  let minLng = Infinity, maxLng = -Infinity;
-
-  normalizedPath.forEach(pt => {
-    if (pt.lat < minLat) minLat = pt.lat;
-    if (pt.lat > maxLat) maxLat = pt.lat;
-    if (pt.lng < minLng) minLng = pt.lng;
-    if (pt.lng > maxLng) maxLng = pt.lng;
-  });
-
-    const padding = 0.015;
-    const bounds = {
-        minLat: minLat - padding,
-        maxLat: maxLat + padding,
-        minLng: minLng - padding,
-        maxLng: maxLng + padding
-    };
-
-    const routePolyline = new google.maps.Polyline({
-        path: normalizedPath,
-        visible: false
-    });
-    const toleranceOffset = 0.0005;
-    let matchedCams = [];
-
-    allCams.forEach(cam => {
-        const camLat = parseFloat(cam.cam_lat || cam.lat);
-        const camLng = parseFloat(cam.cam_lng || cam.lng || cam.lon);
-        if (isNaN(camLat) || isNaN(camLng)) return;
-
-        if (camLat < bounds.minLat || camLat > bounds.maxLat || 
-            camLng < bounds.minLng || camLng > bounds.maxLng) {
-            return;
-        }
-        // 第二層：Google Geometry 精確路徑距離比對
-        const camLatLng = new google.maps.LatLng(camLat, camLng);
-            if (google.maps.geometry?.poly?.isLocationOnEdge(camLatLng, routePolyline, toleranceOffset)) {
-            matchedCams.push(cam);
-        }
-    });
-
-    console.log(`[導航篩選] 全台 ${allCams.length} 支 CCTV 中，符合路線周邊的有 ${matchedCams.length} 支。`);
-    if (typeof renderRouteMarkers === 'function') {
-        renderRouteMarkers(matchedCams);
-    } else if (window.cctvRenderer && typeof window.cctvRenderer.renderRouteMarkers === 'function') {
-        window.cctvRenderer.renderRouteMarkers(matchedCams);
-    }
-}
-
-function resetMapToAllCameras() {
     isRouteMode = false;
-    routeCamIds.clear();
 
     if (currentRoutePolyline) {
         currentRoutePolyline.setMap(null);
         currentRoutePolyline = null;
     }
 
-    activeCamMarkers.forEach(marker => { marker.map = null; });
+    // 把導航模式建立的 Marker 全部移除
+    activeCamMarkers.forEach(marker => {
+        marker.map = null;
+    });
+
     activeCamMarkers = [];
-    visibleMarkerIds.clear();
 
-    if (markerCluster) markerCluster.clearMarkers();
+    if (markerCluster) {
+        markerCluster.clearMarkers();
+    }
 
-    updateMarkersInViewport();
+    // 重新抓目前畫面的 CCTV
+    await fetchCameraData();
+
+    // 隱藏按鈕
+    document.getElementById("clearRouteBtn").style.display = "none";
 }
 
 /**
@@ -255,14 +218,22 @@ document.getElementById("editRouteBtn")?.addEventListener("click", () => {
     currentRoutePolyline?.setDraggable(isRouteEditable);
 });
 
-document.getElementById("confirmRouteBtn")?.addEventListener("click", () => {
+document.getElementById("confirmRouteBtn")?.addEventListener("click", async () => {
+
     if (!currentRoutePolyline) return;
-    const finalPath = currentRoutePolyline.getPath().getArray();
-    filterAndShowRouteCameras(finalPath);
+
+    const finalPath = currentRoutePolyline
+        .getPath()
+        .getArray();
+
+    const result = await fetchRouteCameras(finalPath);
+
+    renderRouteMarkers(result.cameras);
+
     currentRoutePolyline.setEditable(false);
+
 });
 
 // 綁定全域
 window.calculateAndDisplayRoute = calculateAndDisplayRoute;
-window.filterAndShowRouteCameras = filterAndShowRouteCameras;
 window.resetMapToAllCameras = resetMapToAllCameras;

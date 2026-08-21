@@ -2,18 +2,44 @@
  * 戰略中心 - 路線監視面板系統 (v1.6.0)
  * 檔案 6: cctv-renderer.js - 👁️ CCTV 渲染與彈出視窗管理
  */
+
 /**
  * 撈取監視器 CCTV JSON
  */
 async function fetchCameraData() {
     try {
-        const response = await fetch('cam-list.json');
-        if (!response.ok) throw new Error("讀取 CCTV JSON 失敗");
+        const bounds = map.getBounds();
+
+        if (!bounds)return;
+        
+        const ne = bounds.getNorthEast();
+        const sw = bounds.getSouthWest();
+        
+        const url =
+            `http://localhost:3000/api/cameras/viewport` +
+            `?minLat=${sw.lat()}` +
+            `&maxLat=${ne.lat()}` +
+            `&minLon=${sw.lng()}` +
+            `&maxLon=${ne.lng()}`;
+
+        console.log(url);
+
+        const response = await fetch(url);
+
         allCams = await response.json();
-        console.log(`[成功] 載入 CCTV 總數: ${allCams.length}`);
-    } catch (err) {
-        console.error("CCTV 載入錯誤:", err);
+
+        console.log("目前載入 CCTV：", allCams.length);
+        
+
+        updateMarkersInViewport();
+
     }
+    catch(err){
+
+        console.error(err);
+
+    }
+
 }
 
 /**
@@ -34,47 +60,56 @@ function updateMarkersInViewport() {
     const markersToAddToCluster = [];
 
     allCams.forEach(cam => {
-        const lat = parseFloat(cam.lat);
-        const lng = parseFloat(cam.lon);
-        if (isNaN(lat) || isNaN(lng)) return;
+    const lat = Number(cam.latitude);
+    const lng = Number(cam.longitude);
 
-        const latLng = new google.maps.LatLng(lat, lng);
+    if (isNaN(lat) || isNaN(lng)) return;
 
-        // 判定是否在畫面內
-        if (bounds.contains(latLng)) {
-            const camId = cam.id || `${lat}_${lng}`;
-            currentVisibleIds.add(camId);
+    const latLng = new google.maps.LatLng(lat, lng);
 
-            let marker = markerCache.get(camId);
-            
-            if (!marker) {
-                // 快取無命中：新建 Marker，硬性設定 map 實例，啟用點擊解鎖
-                marker = new google.maps.marker.AdvancedMarkerElement({
-                    position: latLng,
-                    map: map,
-                    gmpClickable: true, // 解鎖 AdvancedMarkerElement 的點擊事件
-                    title: cam.name || "CCTV"
-                });
+    if (bounds.contains(latLng)) {
 
-                marker.addEventListener("gmp-click", () => {
-                    openMonitorInfoWindow(marker, cam);
-                });
+        const camId = cam.camera_id;
 
-                markerCache.set(camId, marker);
-            } else {
-                // 快取命中：若先前在畫面外，重新綁定至地圖
-                if (marker.map !== map) {
-                    marker.map = map;
-                }
-            }
+        currentVisibleIds.add(camId);
 
-            if (!visibleMarkerIds.has(camId)) {
-                visibleMarkerIds.add(camId);
-            }
-            
-            markersToAddToCluster.push(marker);
+        let marker = markerCache.get(camId);
+
+        if (!marker) {
+
+            marker = new google.maps.marker.AdvancedMarkerElement({
+
+                position: latLng,
+
+                map,
+
+                title: cam.camera_name,
+
+                gmpClickable: true
+
+            });
+
+            marker.addEventListener("gmp-click", () => {
+
+                openMonitorInfoWindow(marker, cam);
+
+            });
+
+            markerCache.set(camId, marker);
+
+        } else {
+
+            marker.map = map;
+
         }
-    });
+
+        visibleMarkerIds.add(camId);
+
+        markersToAddToCluster.push(marker);
+
+    }
+
+});
 
     // 處理離開可視範圍的標記 (卸載 map 釋放 DOM，保留實例於快取)
     for (let camId of visibleMarkerIds) {
@@ -109,7 +144,7 @@ function openMonitorInfoWindow(marker, cam) {
     currentInfoWindow = new google.maps.InfoWindow({
         content: `
             <div style="color:#000; font-family:sans-serif; width:220px;">
-                <h4 style="margin:0 0 4px 0; font-size:14px; font-weight:bold; color:#111;">${cam.name}</h4>
+                <h4 style="margin:0 0 4px 0; font-size:14px; font-weight:bold; color:#111;">${cam.camera_name}</h4>
                 <div style="font-size:11px; color:#007bff; font-weight:bold; margin-bottom:6px; display:flex; align-items:center; gap:2px;">
                     <span>⚡ 支援影像「滑鼠拖曳」派件</span>
                 </div>
@@ -118,7 +153,7 @@ function openMonitorInfoWindow(marker, cam) {
                      style="background:#000; aspect-ratio:16/9; display:flex; justify-content:center; align-items:center; overflow:hidden; border-radius:4px; cursor:grab; border:2px dashed #007bff;"
                      title="滑鼠按住此處拖曳至下方電視牆">
                     <img id="info-window-img" 
-                         src="${getCacheBusterUrl(cam.cam_url)}" 
+                         src="${getCacheBusterUrl(cam.camera_url)}" 
                          style="width:100%; height:100%; object-fit:cover; pointer-events: none;" 
                          onerror="this.src='https://placehold.co/640x360/000000/444444?text=NO+SIGNAL'">
                 </div>
@@ -152,7 +187,7 @@ function openMonitorInfoWindow(marker, cam) {
     infoWindowInterval = setInterval(() => {
         const img = document.getElementById("info-window-img");
         if (img) {
-            img.src = getCacheBusterUrl(cam.cam_url);
+            img.src = getCacheBusterUrl(cam.camera_url);
         }
     }, 3000);
 
@@ -161,7 +196,7 @@ function openMonitorInfoWindow(marker, cam) {
         if (infoWindowInterval) {
             clearInterval(infoWindowInterval);
             infoWindowInterval = null;
-            console.log(`[安全性清理] 已關閉 ${cam.name} 視窗計時器。`);
+            console.log(`[安全性清理] 已關閉 ${cam.camera_name} 視窗計時器。`);
         }
     });
 }
@@ -170,48 +205,70 @@ function openMonitorInfoWindow(marker, cam) {
  * @param {Array} matchedCams - 經過 AABB 與幾何篩選出的路線沿線監視器陣列
  */
 function renderRouteMarkers(matchedCams) {
-  console.log(`[導航渲染] 啟動路線模式，將隱藏無關監視器，僅保留沿線 ${matchedCams.length} 支 CCTV...`);
+    document.getElementById("clearRouteBtn").style.display = "inline-block";
+    console.log(`[導航渲染] 啟動路線模式，將隱藏無關監視器，僅保留沿線 ${matchedCams.length} 支 CCTV...`);
 
-  // 1. 強制切換為路線模式
-  isRouteMode = true;
+    // 1. 強制切換為路線模式
+    isRouteMode = true;
 
-  // 2. 徹底清空叢集與地圖上所有既有的 Marker
-  if (markerCluster) {
-    markerCluster.clearMarkers();
-  }
-  activeCamMarkers.forEach(marker => {
-    marker.map = null; // 從地圖移除物理 DOM 節點
-  });
-  activeCamMarkers = []; // 清空可視陣列
+    // 2. 徹底清空叢集與地圖上所有既有的 Marker
+    if (markerCluster) {
+        markerCluster.clearMarkers();
+    }
+    activeCamMarkers.forEach(marker => {
+        marker.map = null; // 從地圖移除物理 DOM 節點
+    });
+    activeCamMarkers = []; // 清空可視陣列
 
-  // 3. 僅為符合路線的監視器建立標記
-  matchedCams.forEach(cam => {
-    const lat = parseFloat(cam.cam_lat || cam.lat);
-    const lng = parseFloat(cam.cam_lng || cam.lng || cam.lon);
-    if (isNaN(lat) || isNaN(lng)) return;
+    // 3. 僅為符合路線的監視器建立標記
+    matchedCams.forEach(cam => {
 
-    // 建立 AdvancedMarkerElement 標記
-    const marker = new google.maps.marker.AdvancedMarkerElement({
-      position: { lat: lat, lng: lng },
-      map: map,
-      title: cam.name,
-      gmpClickable: true
+        const lat = Number(cam.latitude);
+        const lng = Number(cam.longitude);
+
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        let marker = markerCache.get(cam.camera_id);
+
+        if (!marker) {
+
+            marker = new google.maps.marker.AdvancedMarkerElement({
+
+                position: { lat, lng },
+
+                map,    
+
+                title: cam.camera_name,
+
+                gmpClickable: true
+
+            });
+
+            marker.addEventListener("gmp-click", () => {
+
+                openMonitorInfoWindow(marker, cam);
+
+            });
+
+            markerCache.set(cam.camera_id, marker);
+
+        } else {
+
+            marker.map = map;
+
+        }
+
+
+        activeCamMarkers.push(marker);
+
     });
 
-    // 綁定點擊開彈窗 (InfoWindow)
-    marker.addListener("click", () => {
-      openMonitorInfoWindow(marker, cam);
-    });
+    // 4. 將路線沿線標記重新加入叢集與地圖
+    if (markerCluster) {
+        markerCluster.addMarkers(activeCamMarkers);
+    }
 
-    activeCamMarkers.push(marker);
-  });
-
-  // 4. 將路線沿線標記重新加入叢集與地圖
-  if (markerCluster) {
-    markerCluster.addMarkers(activeCamMarkers);
-  }
-
-  console.log(`[導航渲染] 隱藏完成！目前地圖僅顯示路線周邊監視器。`);
+    console.log(`[導航渲染] 隱藏完成！目前地圖僅顯示路線周邊監視器。`);
 }
 
 /**

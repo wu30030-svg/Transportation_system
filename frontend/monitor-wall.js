@@ -40,11 +40,11 @@ function setWallSlot(i, cam) {
                 font-size:12px;
                 font-family:monospace;">
                 📡 CH${i+1} <br>
-                ${cam.name}
+                ${cam.camera_name}
             </div>
             <img
                 id="wall-img-${i}"
-                src="${getCacheBusterUrl(cam.cam_url)}"
+                src="${getCacheBusterUrl(cam.camera_url)}"
                 style="width:100%;height:100%;object-fit:cover;"
                 onerror="this.src='https://placehold.co/640x360/000000/444444?text=NO+SIGNAL'">
         </div>
@@ -54,11 +54,11 @@ function setWallSlot(i, cam) {
     wallRefreshIntervals[i] = setInterval(() => {
         const img = document.getElementById(`wall-img-${i}`);
         if (img) {
-            img.src = getCacheBusterUrl(cam.cam_url);
+            img.src = getCacheBusterUrl(cam.camera_url);
         }
     }, 3000);
 
-    console.log(`[電視牆] CH${i+1} 已成功派件：${cam.name}`);
+    console.log(`[電視牆] CH${i+1} 已成功派件：${cam.camera_name}`);
 }
 
 /**
@@ -90,7 +90,7 @@ function handleDragStart(event, cam) {
     
     // 備援機制：防止部分瀏覽器阻擋 dataTransfer，直接存於全域
     window.currentDraggedCam = cam;
-    console.log(`[滑鼠拖曳] 已擷取監視訊號：${cam.name}`);
+    console.log(`[滑鼠拖曳] 已擷取監視訊號：${cam.camera_name}`);
 }
 
 /**
@@ -122,7 +122,7 @@ function setupWallDragAndDrop() {
             if (!cam) cam = window.currentDraggedCam;
 
             if (cam) {
-                console.log(`[拖曳成功] ${cam.name} → CH${i + 1}`);
+                console.log(`[拖曳成功] ${cam.camera_name} → CH${i + 1}`);
                 setWallSlot(i, cam);
             } else {
                 console.warn("[拖曳失敗] 無法獲取 CCTV 資訊");
