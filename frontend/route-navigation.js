@@ -4,7 +4,6 @@
  */
 // 🔑 Azure Maps 金鑰
 // ⚠️ 正式上線前務必改走後端代理，不要讓金鑰留在前端檔案裡（參考上方說明）
-const AZURE_MAPS_KEY = window.AZURE_MAPS_KEY || "";
 
 async function calculateAndDisplayRoute() {
     const start = document.getElementById("startInput").value;
@@ -87,31 +86,60 @@ async function calculateCarRoute(start, end) {
  * 大貨車路線 (Azure Maps Truck Routing)
  */
 async function calculateTruckRoute(start, end, truckProfile) {
+
     const originCoord = await geocodeAddress(start);
     const destCoord = await geocodeAddress(end);
 
-    let url = `https://atlas.microsoft.com/route/directions/json?api-version=1.0`
-        + `&subscription-key=${AZURE_MAPS_KEY}`
-        + `&query=${originCoord.lat},${originCoord.lng}:${destCoord.lat},${destCoord.lng}`
-        + `&travelMode=truck`
-        + `&vehicleHeight=${truckProfile.height}`
-        + `&vehicleWidth=${truckProfile.width}`
-        + `&vehicleWeight=${truckProfile.weightKg}`;
+    const response = await fetch(
+        `${CONFIG.API_BASE_URL}/api/routes/truck`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                origin: {
+                    lat: originCoord.lat,
+                    lng: originCoord.lng
+                },
+                destination: {
+                    lat: destCoord.lat,
+                    lng: destCoord.lng
+                },
+                height: truckProfile.height,
+                width: truckProfile.width,
+                weightKg: truckProfile.weightKg,
+                loadType: truckProfile.loadType
+            })
+        }
+    );
 
-    if (truckProfile.loadType) {
-        url += `&vehicleLoadType=${truckProfile.loadType}`;
+    const data = await response.json();
+
+    if (!response.ok) {
+        console.error("[Truck Route API Error]", data);
+        throw new Error(
+            data.message || "Truck route API request failed"
+        );
     }
 
-    const res = await fetch(url);
-    const data = await res.json();
+    if (!data.success || !data.path || data.path.length === 0) {
+        return null;
+    }
 
-    if (!data.routes || data.routes.length === 0) return null;
-
-    const points = data.routes[0].legs.flatMap(leg => leg.points);
-    const path = points.map(p => new google.maps.LatLng(p.latitude, p.longitude));
+    const path = data.path.map(
+        point => new google.maps.LatLng(
+            point.lat,
+            point.lng
+        )
+    );
 
     const bounds = new google.maps.LatLngBounds();
-    path.forEach(latLng => bounds.extend(latLng));
+
+    path.forEach(latLng => {
+        bounds.extend(latLng);
+    });
+
     map.fitBounds(bounds);
 
     return path;
