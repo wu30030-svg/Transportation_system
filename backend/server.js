@@ -11,6 +11,8 @@ app.use(express.json());
 
 app.use("/api", require("./routes"));
 
+console.log("DATABASE_URL exists:", Boolean(process.env.DATABASE_URL));
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
