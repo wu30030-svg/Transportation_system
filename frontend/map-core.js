@@ -163,3 +163,6 @@ function setupRouteButton() {
 window.initMap = initMap;
 window.switchMapId = switchMapId;
 window.togglePoiLayer = togglePoiLayer;
+window.addEventListener("load", () => {
+    initMap();
+});

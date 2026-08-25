@@ -16,7 +16,7 @@ async function fetchCameraData() {
         const sw = bounds.getSouthWest();
         
         const url =
-            `http://localhost:3000/api/cameras/viewport` +
+            `${CONFIG.API_BASE_URL}/api/cameras/viewport` +
             `?minLat=${sw.lat()}` +
             `&maxLat=${ne.lat()}` +
             `&minLon=${sw.lng()}` +
