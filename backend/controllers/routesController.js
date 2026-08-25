@@ -1,6 +1,7 @@
 const {
     getRouteCameras,
-    calculateTruckRoute
+    calculateTruckRoute,
+    recalculateEditedTruckRoute
 } = require("../services/routeService");
 
 
@@ -138,10 +139,158 @@ async function truckRouteController(req, res) {
 
 }
 
+// ========================================
+// Azure Maps → 編輯後 Truck Route
+// ========================================
+
+async function editTruckRouteController(req, res) {
+
+    try {
+
+        const {
+            controlPoints,
+            height,
+            width,
+            weightKg,
+            loadType
+        } = req.body;
+
+
+        // ========================================
+        // Validation
+        // ========================================
+
+        if (
+            !Array.isArray(controlPoints) ||
+            controlPoints.length < 2
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "controlPoints must contain at least 2 points"
+
+            });
+
+        }
+
+
+        // ========================================
+        // 驗證控制點
+        // ========================================
+
+        for (const point of controlPoints) {
+
+            if (
+                typeof point.lat !== "number" ||
+                typeof point.lng !== "number"
+            ) {
+
+                return res.status(400).json({
+
+                    success: false,
+
+                    message:
+                        "Each control point must contain numeric lat/lng"
+
+                });
+
+            }
+
+        }
+
+
+        // ========================================
+        // Azure Maps 重新計算
+        // ========================================
+
+        const route =
+            await recalculateEditedTruckRoute({
+
+                controlPoints,
+
+                height: Number(height) || 4.0,
+
+                width: Number(width) || 2.5,
+
+                weightKg:
+                    Number(weightKg) || 20000,
+
+                loadType:
+                    loadType || ""
+
+            });
+
+
+        if (
+            !route ||
+            route.length === 0
+        ) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    "No edited truck route found"
+
+            });
+
+        }
+
+
+        console.log(
+            "========== Edited Truck Route API =========="
+        );
+
+        console.log(
+            `Control points: ${controlPoints.length}`
+        );
+
+        console.log(
+            `Route points: ${route.length}`
+        );
+
+        console.log(
+            "============================================"
+        );
+
+
+        res.json({
+
+            success: true,
+
+            points: route.length,
+
+            path: route
+
+        });
+
+    }
+
+    catch (err) {
+
+        console.error(
+            "[Edited Truck Route Error]",
+            err
+        );
+
+        res.status(500).json({
+
+            success: false,
+
+            message: err.message
+
+        });
+
+    }
+
+}
 
 module.exports = {
-
     getRouteCameras: routeController,
-    truckRouteController
-
+    truckRouteController,
+    editTruckRouteController
 };

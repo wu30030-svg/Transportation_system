@@ -3,7 +3,8 @@ const router = express.Router();
 
 const {
     getRouteCameras,
-    truckRouteController
+    truckRouteController,
+    editTruckRouteController
 } = require("../controllers/routesController");
 
 
@@ -11,14 +12,30 @@ const {
 // Route → CCTV
 // ========================================
 
-router.post("/cameras", getRouteCameras);
+router.post(
+    "/cameras",
+    getRouteCameras
+);
 
 
 // ========================================
 // Azure Maps → Truck Route
 // ========================================
 
-router.post("/truck", truckRouteController);
+router.post(
+    "/truck",
+    truckRouteController
+);
+
+
+// ========================================
+// Azure Maps → Edited Truck Route
+// ========================================
+
+router.post(
+    "/truck/edit",
+    editTruckRouteController
+);
 
 
 module.exports = router;

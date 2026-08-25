@@ -72,7 +72,7 @@ async function calculateTruckRoute({
         throw new Error("AZURE_MAPS_KEY is not configured");
     }
 
-    const url =
+    let url =
         "https://atlas.microsoft.com/route/directions/json" +
         "?api-version=1.0" +
         `&subscription-key=${encodeURIComponent(azureKey)}` +
@@ -87,12 +87,15 @@ async function calculateTruckRoute({
     }
 
     console.log("[Azure Maps] Truck Routing");
+    console.log("Origin:", origin);
+    console.log("Destination:", destination);
 
     const response = await fetch(url);
 
     const data = await response.json();
 
     if (!response.ok) {
+
         console.error("[Azure Maps] API Error:", data);
 
         throw new Error(
@@ -116,9 +119,106 @@ async function calculateTruckRoute({
 }
 
 
+// ========================================
+// Azure Maps → 編輯後重新貼道路
+// ========================================
+//
+// controlPoints:
+// [
+//   { lat, lng },
+//   { lat, lng },
+//   { lat, lng }
+// ]
+//
+// 每兩個控制點之間重新呼叫 Azure Maps
+// 最後把所有道路段串成一條完整路線。
+// ========================================
+
+async function recalculateEditedTruckRoute({
+    controlPoints,
+    height,
+    width,
+    weightKg,
+    loadType
+}) {
+
+    if (
+        !Array.isArray(controlPoints) ||
+        controlPoints.length < 2
+    ) {
+        throw new Error(
+            "At least 2 control points are required"
+        );
+    }
+
+    console.log("========== Edited Truck Route ==========");
+    console.log(
+        `Control points: ${controlPoints.length}`
+    );
+
+    const finalPath = [];
+
+    for (let i = 0; i < controlPoints.length - 1; i++) {
+
+        const start = controlPoints[i];
+        const end = controlPoints[i + 1];
+
+        console.log(
+            `[Segment ${i + 1}]`,
+            start,
+            "→",
+            end
+        );
+
+        const segment = await calculateTruckRoute({
+
+            origin: start,
+
+            destination: end,
+
+            height,
+            width,
+            weightKg,
+            loadType
+
+        });
+
+        if (!segment || segment.length === 0) {
+
+            throw new Error(
+                `Unable to calculate truck route for segment ${i + 1}`
+            );
+
+        }
+
+        // 避免相鄰路段重複加入同一個點
+        if (finalPath.length === 0) {
+
+            finalPath.push(...segment);
+
+        } else {
+
+            finalPath.push(...segment.slice(1));
+
+        }
+    }
+
+    console.log(
+        `Final edited route points: ${finalPath.length}`
+    );
+
+    console.log("========================================");
+
+    return finalPath;
+}
+
+
 module.exports = {
 
     getRouteCameras,
-    calculateTruckRoute
+
+    calculateTruckRoute,
+
+    recalculateEditedTruckRoute
 
 };
