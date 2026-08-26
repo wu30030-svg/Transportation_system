@@ -149,6 +149,8 @@ async function editTruckRouteController(req, res) {
 
         const {
             controlPoints,
+            previousPath,
+            editedIndex,
             height,
             width,
             weightKg,
@@ -201,6 +203,44 @@ async function editTruckRouteController(req, res) {
 
         }
 
+        if (!Array.isArray(previousPath) || previousPath.length < 2) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: "previousPath must contain at least 2 points"
+
+            });
+
+        }
+
+        if (!Number.isInteger(editedIndex)) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: "editedIndex must be an integer"
+
+            });
+
+        }
+
+        if (
+            editedIndex <= 0 ||
+            editedIndex >= controlPoints.length - 1
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message: "editedIndex must reference an intermediate control point"
+
+            });
+
+        }
 
         // ========================================
         // Azure Maps 重新計算
@@ -210,6 +250,10 @@ async function editTruckRouteController(req, res) {
             await recalculateEditedTruckRoute({
 
                 controlPoints,
+
+                previousPath,
+
+                editedIndex,
 
                 height: Number(height) || 4.0,
 
