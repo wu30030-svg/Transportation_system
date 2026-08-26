@@ -1,6 +1,6 @@
 const missionRepository = require('../repositories/missionRepository');
 const missionRouteRepository = require('../repositories/missionRouteRepository');
-const missionTemplateRouteRepository =require('../repositories/missionTemplateRouteRepository');
+const missionTemplateRouteRepository = require('../repositories/missionTemplateRouteRepository');
 
 /**
  * 建立 Mission Final Route
@@ -12,6 +12,27 @@ async function createMissionRoute(missionId, data) {
 
     if (!mission) {
         throw new Error('Mission not found');
+    }
+
+    // ------------------------------------
+    // Mission Status
+    // ------------------------------------
+
+    const editableStatuses = [
+        'DRAFT',
+        'PLANNED'
+    ];
+
+    if (!editableStatuses.includes(mission.status)) {
+
+        const error =
+            new Error(
+                'Mission route cannot be created in current mission status'
+            );
+
+        error.statusCode = 400;
+
+        throw error;
     }
 
     // 2. 確認是否已經有 Final Route
@@ -86,6 +107,27 @@ async function updateMissionRoute(missionId, data) {
         throw new Error('Mission not found');
     }
 
+    // ------------------------------------
+    // Mission Status
+    // ------------------------------------
+
+    const editableStatuses = [
+        'DRAFT',
+        'PLANNED'
+    ];
+
+    if (!editableStatuses.includes(mission.status)) {
+
+        const error =
+            new Error(
+                'Mission route cannot be modified in current mission status'
+            );
+
+        error.statusCode = 400;
+
+        throw error;
+    }
+
     const existingRoute =
         await missionRouteRepository.getMissionRoute(missionId);
 
@@ -125,6 +167,26 @@ async function createMissionRouteFromTemplate(
 
     if (!mission) {
         throw new Error('Mission not found');
+    }
+        // ------------------------------------
+    // Mission Status
+    // ------------------------------------
+
+    const editableStatuses = [
+        'DRAFT',
+        'PLANNED'
+    ];
+
+    if (!editableStatuses.includes(mission.status)) {
+
+        const error =
+            new Error(
+                'Mission route cannot be created from template in current mission status'
+            );
+
+        error.statusCode = 400;
+
+        throw error;
     }
 
     // 2. 確認 Mission 尚未有 Route

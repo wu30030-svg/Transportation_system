@@ -126,7 +126,7 @@ async function updateAssignment(
         SET
             vehicle_id = COALESCE($2, vehicle_id),
             driver_id = COALESCE($3, driver_id),
-            commander_id = $4,
+            commander_id = COALESCE($4, commander_id),
             is_main_vehicle = COALESCE($5, is_main_vehicle),
             status = COALESCE($6, status),
             updated_at = NOW()
@@ -138,7 +138,7 @@ async function updateAssignment(
         id,
         vehicleId,
         driverId,
-        commanderId || null,
+        commanderId,
         isMainVehicle,
         status
     ];

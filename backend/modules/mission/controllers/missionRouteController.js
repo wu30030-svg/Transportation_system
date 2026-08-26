@@ -47,6 +47,16 @@ async function createMissionRoute(req, res) {
             });
         }
 
+        if (
+            error.message ===
+            'Mission route cannot be created in current mission status'
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+
         return res.status(500).json({
             success: false,
             message: 'Failed to create mission route'
@@ -137,6 +147,16 @@ async function updateMissionRoute(req, res) {
         }
 
         if (error.message === 'Route geometry cannot be empty') {
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+        if (
+            error.message ===
+            'Mission route cannot be modified in current mission status'
+        ) {
             return res.status(400).json({
                 success: false,
                 message: error.message

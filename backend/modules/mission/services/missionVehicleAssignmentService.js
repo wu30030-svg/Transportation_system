@@ -226,6 +226,51 @@ async function updateAssignment(id, data) {
         throw error;
     }
 
+
+    // ------------------------------------
+    // Mission
+    // ------------------------------------
+
+    const mission =
+        await missionRepository.findMissionById(
+            existing.mission_id
+        );
+
+    if (!mission) {
+        const error =
+            new Error("Mission not found");
+
+        error.statusCode = 404;
+        throw error;
+    }
+
+
+    // ------------------------------------
+    // Mission Status
+    // ------------------------------------
+
+    const editableStatuses = [
+        "DRAFT",
+        "PLANNED"
+    ];
+
+    if (!editableStatuses.includes(mission.status)) {
+
+        const error =
+            new Error(
+                "Mission vehicle assignment cannot be modified in current mission status"
+            );
+
+        error.statusCode = 400;
+
+        throw error;
+    }
+
+
+    // ------------------------------------
+    // Update
+    // ------------------------------------
+
     return await missionVehicleAssignmentRepository
         .updateAssignment(
             id,
