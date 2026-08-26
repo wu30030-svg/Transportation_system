@@ -1,27 +1,32 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>運輸系統</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqnZRFp5mWLKUUmh-v0SjSRBi9s-lsAQk&libraries=geometry,marker"></script>
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqnZRFp5mWLKUUmh-v0SjSRBi9s-lsAQk&libraries=geometry,marker"></script>
 </head>
+
 <body>
     <h1>歡迎來到運輸系統</h1>
     <p>這是我用 VS Code 寫的第一個網頁。</p>
-    
+
     <div style="margin: 15px 0; display: flex; align-items: center; gap: 10px;">
         <input type="text" id="startInput" placeholder="請輸入起始地（如：五支部運輸兵群北大營區）" style="padding: 5px; width: 200px;">
         <span> 到 </span>
         <input type="text" id="endInput" placeholder="請輸入目的地（如：台中火車站）" style="padding: 5px; width: 200px;">
         <button id="routeBtn">規劃路線</button>
+        <button id="resetRouteBtn" onclick="resetRouteToOriginal()" style="display:none;"> ↩️ 重設路線 </button>
         <button id="btn-open-vehicle-settings" onclick="openVehicleModal()">⚙️ 車型設定</button>
-        <button id="clearRouteBtn" style="display:none;">取消導航</button>
-
-        <label style="color: #00ff00; font-family: monospace; cursor: pointer; display: flex; align-items: center; gap: 5px; margin-left: 10px;">
+        <button id="editRouteBtn" style="display:none;"> ✏️ 編輯路線 </button>
+        <button id="clearRouteBtn" style="display:none;"> ❌ 取消導航 </button>
+        <label
+            style="color: #00ff00; font-family: monospace; cursor: pointer; display: flex; align-items: center; gap: 5px; margin-left: 10px;">
             <input type="checkbox" id="gps-tracking-toggle" onchange="toggleUserLocation(this)">
-                📡 啟動即時 GPS 定位與導航追蹤
+            📡 啟動即時 GPS 定位與導航追蹤
         </label>
     </div>
 
@@ -42,7 +47,7 @@
         <button id="togglePoiBtn">顯示景點資訊</button>
         <button id="clearWallBtn" onclick="clearAllWallSlots()">一鍵清空電視牆</button>
     </div>
-    
+
     <div id="vehicle-modal-overlay" class="modal-overlay" onclick="closeVehicleModal()">
         <div class="modal-box" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -84,20 +89,20 @@
     </div>
 
     <script>
-    function openVehicleModal() {
-        document.getElementById('vehicle-modal-overlay').classList.add('active');
-    }
-    function closeVehicleModal() {
-        document.getElementById('vehicle-modal-overlay').classList.remove('active');
-    }
-    function toggleTruckOptions() {
-        const vehicleType = document.getElementById('vehicle-type').value;
-        document.getElementById('truck-options').style.display = (vehicleType === 'truck') ? 'block' : 'none';
-    }
+        function openVehicleModal() {
+            document.getElementById('vehicle-modal-overlay').classList.add('active');
+        }
+        function closeVehicleModal() {
+            document.getElementById('vehicle-modal-overlay').classList.remove('active');
+        }
+        function toggleTruckOptions() {
+            const vehicleType = document.getElementById('vehicle-type').value;
+            document.getElementById('truck-options').style.display = (vehicleType === 'truck') ? 'block' : 'none';
+        }
     </script>
 
     <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
-    
+
     <script src="config.js"></script>
     <script src="api.js"></script>
     <script src="global-state.js"></script>
@@ -107,7 +112,8 @@
     <script src="cctv-renderer.js"></script>
     <script src="route-navigation.js"></script>
     <script src="map-core.js"></script>
-    
-    
+
+
 </body>
+
 </html>
