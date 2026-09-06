@@ -1,15 +1,30 @@
-/**
+﻿/**
  * 戰略中心 - 路線監視面板系統 (v1.6.0)
  * 檔案 7: map-core.js - 🏗️ 核心地圖初始化與 WebGL 記憶體淨化
  */
 /**
  * 地圖初始化 entry point
  */
+let mapInitialized = false;
+
+
 async function initMap() {
+
+    if (mapInitialized) {
+
+        console.log(
+            "[Map] 地圖已初始化，跳過重新建立"
+        );
+
+        return;
+
+    }
+
+
     await google.maps.importLibrary("marker");
     await google.maps.importLibrary("geometry");
     const targetLocation = { lat: 24.239268, lng: 120.623498 };
-    
+
     // 建立新 Map
     map = new google.maps.Map(document.getElementById("map"), {
         center: targetLocation,
@@ -18,7 +33,6 @@ async function initMap() {
         disableDefaultUI: false
     });
 
-    setupToggleStyleButton();
     setupRouteButton();
     setupWallDragAndDrop();
 
@@ -34,6 +48,8 @@ async function initMap() {
         console.log("[效能動態] 地圖觸發 idle，更新可視區域標記...");
         await fetchCameraData();
     });
+
+    mapInitialized = true;
 
 }
 
@@ -63,11 +79,6 @@ async function switchMapId(newMapId) {
 
     if (currentRoutePolyline) {
         currentRoutePolyline.setMap(null);
-    }
-
-    // 【定位遷移防禦】暫時脫鉤 GPS 定位標記，避免隨舊地圖銷毀
-    if (userLocationMarker) {
-        userLocationMarker.map = null;
     }
 
     // 4. 清除 InfoWindow 記憶體溢出
@@ -104,7 +115,7 @@ async function switchMapId(newMapId) {
 
     markerCache.forEach(marker => {
         if (marker.map !== null && !visibleMarkerIds.has(marker.id)) {
-            marker.map = null; 
+            marker.map = null;
         }
     });
 
@@ -114,7 +125,7 @@ async function switchMapId(newMapId) {
         markers: activeCamMarkers,
         algorithm: new markerClusterer.SuperClusterAlgorithm({ radius: 60 })
     });
-    
+
     map.addListener("idle", updateMarkersInViewport);
 
     // 9. 折線重新掛載
@@ -122,32 +133,8 @@ async function switchMapId(newMapId) {
         currentRoutePolyline.setMap(map);
     }
 
-    // 【定位遷移復原】GPS 定位點掛載回全新地圖
-    if (userLocationMarker) {
-        userLocationMarker.map = map;
-    }
-
     console.log(`[系統通知] 節點物理置換成功。WebGL 記憶體已釋放，已無縫轉移。`);
     setupWallDragAndDrop();
-}
-
-/**
- * 景點圖層切換
- */
-async function togglePoiLayer() {
-    isPoiVisible = !isPoiVisible;
-    const targetMapId = isPoiVisible ? NORMAL_MAP_ID : CLEAN_MAP_ID;
-    await switchMapId(targetMapId);
-
-    const toggleBtn = document.getElementById("togglePoiBtn");
-    if (toggleBtn) {
-        toggleBtn.textContent = isPoiVisible ? "關閉景點顯示" : "顯示周邊景點";
-    }
-}
-
-function setupToggleStyleButton() {
-    const btn = document.getElementById("togglePoiBtn");
-    if (btn) btn.addEventListener("click", togglePoiLayer);
 }
 
 function setupRouteButton() {
@@ -162,7 +149,3 @@ function setupRouteButton() {
 // 綁定全域
 window.initMap = initMap;
 window.switchMapId = switchMapId;
-window.togglePoiLayer = togglePoiLayer;
-window.addEventListener("load", () => {
-    initMap();
-});

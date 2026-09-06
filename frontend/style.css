@@ -1,117 +1,1580 @@
+/* ========================================
+   Mission Center Design System
+   Dark Tactical Command Center
+======================================== */
 
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f2f5;
-    text-align: center;
-    padding-top: 50px;
+:root {
+    --bg: #10131a;
+    --panel: #171b24;
+    --card: #1c212c;
+
+    --border: #262c3a;
+    --border-hover: #343b4d;
+
+    --text-primary: #f1efe9;
+    --text-secondary: #8b93a7;
+    --text-tertiary: #5b6272;
+
+    --amber: #ffb238;
+    --amber-dim: #6b5227;
+    --amber-glow: rgba(255, 178, 56, 0.25);
+
+    --orange: #ff9d52;
+    --danger: #ff5f5f;
+    --success: #8fbd75;
+
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+
+    --font-ui:
+        "Inter",
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    --font-data:
+        "JetBrains Mono",
+        "Courier New",
+        monospace;
 }
 
-h1 {
-    color: #333;
+
+/* ========================================
+   01. Global
+======================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(255, 178, 56, 0.035),
+            transparent 35%
+        ),
+        var(--bg);
+
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    text-align: left;
+    padding: 0;
+}
+
+button,
+input,
+select {
+    font-family: inherit;
 }
 
 button {
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
     cursor: pointer;
 }
 
-button:hover {
-    background-color: #0056b3;
+.hidden {
+    display: none !important;
 }
 
-#map {
-    width: 80%;          /* 寬度佔螢幕的 80% */
-    height: 450px;       /* 必須設定明確的高度 */
-    margin: 30px auto;   /* 置中，並與上下拉開距離 */
-    border-radius: 12px; /* 圓角 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 漂亮的陰影 */
+.mono {
+    font-family: var(--font-data);
 }
 
-/* ===== 🚀 新增：保全四分格電視牆樣式 ===== */
-#security-panel {
-    width: 80%;             /* 寬度配合地圖一樣佔 80% */
-    max-width: 600px;       /* 設定最大寬度，避免在寬螢幕上圖片被拉得太扁 */
-    margin: 0 auto 30px auto; /* 自動置中，並與下方按鈕拉開距離 */
-    background-color: #1a1a1a; /* 深灰色背景，很有保全控制室的感覺 */
-    color: #00ff00;         /* 螢光綠文字 */
-    padding: 15px;
-    border: 2px solid #333;
-    border-radius: 12px;    /* 配合地圖的圓角 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* 比地圖更重的深色陰影 */
-    font-family: 'Courier New', Courier, monospace; /* 科技感等寬字體 */
+
+/* ========================================
+   02. Typography
+======================================== */
+
+h1,
+h2,
+h3,
+p {
+    margin-top: 0;
 }
 
-#security-panel h3 {
-    margin: 0 0 12px 0;
-    font-size: 16px;
+.eyebrow {
+    display: block;
+    margin-bottom: 6px;
+
+    color: var(--text-tertiary);
+
+    font-family: var(--font-data);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+
+/* ========================================
+   03. Header
+======================================== */
+
+.command-header {
+    height: 78px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 28px;
+
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+}
+
+.system-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.system-mark {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid var(--amber);
+    border-radius: var(--radius-sm);
+
+    color: var(--amber);
+
+    font-family: var(--font-data);
+    font-weight: 800;
+    letter-spacing: -1px;
+
+    box-shadow: 0 0 18px var(--amber-glow);
+}
+
+.system-title h1 {
+    margin: 0;
+
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.system-title p {
+    margin: 3px 0 0;
+
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.system-status {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.status-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+
+    display: inline-block;
+
+    border-radius: 50%;
+}
+
+.status-dot.online {
+    background: var(--success);
+    box-shadow: 0 0 8px rgba(143, 189, 117, 0.4);
+}
+
+.status-dot.offline {
+    background: var(--text-tertiary);
+}
+
+
+/* ========================================
+   04. Main Mission Center
+======================================== */
+
+.mission-center {
+    min-height: calc(100vh - 78px);
+
+    display: grid;
+
+    grid-template-columns:
+        270px
+        minmax(0, 1fr)
+        240px;
+
+    gap: 0;
+}
+
+
+/* ========================================
+   05. Mission Sidebar
+======================================== */
+
+.mission-sidebar {
+    min-height: 100%;
+
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 24px 18px 18px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.icon-button {
+    width: 32px;
+    height: 32px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    background: transparent;
+    color: var(--amber);
+
+    font-size: 20px;
+    line-height: 1;
+}
+
+.icon-button:hover {
+    background: var(--card);
+    border-color: var(--amber);
+}
+
+.mission-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 14px 18px;
+
+    color: var(--text-secondary);
+    font-size: 11px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.text-button {
+    padding: 0;
+
+    border: 0;
+    background: transparent;
+
+    color: var(--amber);
+    font-size: 11px;
+}
+
+.mission-list {
+    padding: 8px;
+}
+
+.mission-list-item {
+    width: 100%;
+
+    display: block;
+
+    margin-bottom: 5px;
+    padding: 13px 12px;
+
+    text-align: left;
+
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+
+    color: var(--text-primary);
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.mission-list-item:hover {
+    background: var(--card);
+    border-color: var(--border-hover);
+}
+
+.mission-list-item.active {
+    background:
+        linear-gradient(
+            90deg,
+            rgba(255, 178, 56, 0.09),
+            transparent
+        );
+
+    border-color: var(--amber-dim);
+
+    box-shadow: inset 3px 0 0 var(--amber);
+}
+
+.mission-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 7px;
+}
+
+.mission-item-status {
+    color: var(--amber);
+
+    font-family: var(--font-data);
+    font-size: 9px;
+}
+
+.mission-item-code {
+    color: var(--text-tertiary);
+    font-size: 9px;
+}
+
+.mission-item-name {
+    display: block;
+
+    margin-bottom: 7px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mission-item-time {
+    color: var(--text-tertiary);
+    font-size: 9px;
+}
+
+.mission-list-empty,
+.mission-list-error {
+    padding: 30px 15px;
+
+    color: var(--text-tertiary);
+
+    text-align: center;
+    font-size: 12px;
+}
+
+.mission-list-error {
+    color: var(--danger);
+}
+
+
+/* ========================================
+   06. Workspace
+======================================== */
+
+.mission-workspace {
+    min-width: 0;
+
+    padding: 26px 30px 40px;
+
+    background: var(--bg);
+}
+
+.workspace-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+
+    margin-bottom: 20px;
+}
+
+.workspace-header h2 {
+    margin: 0;
+
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.data-code {
+    color: var(--amber);
+
+    font-family: var(--font-data);
+    font-size: 12px;
+}
+
+
+/* ========================================
+   07. Workspace Tabs
+======================================== */
+
+.workspace-tabs {
+    display: flex;
+    gap: 4px;
+
+    margin-bottom: 20px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.workspace-tab {
+    position: relative;
+
+    padding: 11px 14px;
+
+    border: 0;
+    border-bottom: 2px solid transparent;
+
+    background: transparent;
+
+    color: var(--text-tertiary);
+    font-size: 12px;
+
+    transition:
+        color 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.workspace-tab:hover {
+    color: var(--text-secondary);
+}
+
+.workspace-tab.active {
+    color: var(--amber);
+    border-bottom-color: var(--amber);
+}
+
+.workspace-panel {
+    display: none;
+}
+
+.workspace-panel.active {
+    display: block;
+}
+
+
+/* ========================================
+   08. Shared Cards
+======================================== */
+
+.card {
+    background: var(--card);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+
+    transition:
+        border-color 0.15s ease,
+        background 0.15s ease;
+}
+
+.card:hover {
+    border-color: var(--border-hover);
+}
+
+.card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 20px;
+    padding: 20px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.card-header h3 {
+    margin: 0;
+
+    font-size: 18px;
+    font-weight: 600;
+}
+
+
+/* ========================================
+   09. Mission Overview
+======================================== */
+
+.mission-description {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 20px;
+    padding: 20px;
+}
+
+.info-label,
+.data-label,
+.status-label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: var(--text-tertiary);
+
+    font-size: 10px;
     letter-spacing: 1px;
 }
 
-/* 2x2 格子核心架構 */
-.wall-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 橫向兩格，平分寬度 */
-    grid-template-rows: repeat(2, 1fr);    /* 縱向兩格，平分高度 */
-    gap: 8px;                              /* 格子之間的縫隙 */
-}
-/* 每個獨立的監視器畫面框 */
-.monitor-cell {
-    background-color: #000;    /* 沒訊號時純黑 */
-    border: 1px solid #444;
-    border-radius: 6px;
-    aspect-ratio: 16 / 9;      /* 強制鎖定台灣監視器標準的 16:9 比例 */
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;   /* 讓沒訊號的文字水平置中 */
-    align-items: center;       /* 讓沒訊號的文字垂直置中 */
+.info-block {
+    color: var(--text-secondary);
+
+    font-size: 13px;
+    line-height: 1.7;
 }
 
-/* 監視器即時影像本身 */
+
+/* ========================================
+   Status Badge
+======================================== */
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 5px 9px;
+
+    border: 1px solid var(--amber-dim);
+    border-radius: 999px;
+
+    color: var(--amber);
+    background: rgba(255, 178, 56, 0.06);
+
+    font-family: var(--font-data);
+    font-size: 10px;
+}
+
+.status-badge.completed {
+    color: var(--text-secondary);
+
+    border-color: var(--border-hover);
+    background: transparent;
+}
+
+.status-badge.cancelled,
+.status-badge.aborted {
+    color: var(--danger);
+
+    border-color: rgba(255, 95, 95, 0.35);
+    background: rgba(255, 95, 95, 0.05);
+}
+
+
+/* ========================================
+   Overview Grid
+======================================== */
+
+.overview-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-top: 12px;
+}
+
+.data-card {
+    padding: 18px;
+}
+
+.data-value {
+    display: block;
+
+    color: var(--text-primary);
+    font-size: 18px;
+}
+
+.data-card .mono {
+    color: var(--amber);
+    font-size: 14px;
+}
+
+
+/* ========================================
+   Lifecycle
+======================================== */
+
+.lifecycle-card {
+    margin-top: 12px;
+}
+
+.lifecycle {
+    display: flex;
+    align-items: center;
+
+    padding: 24px 20px;
+
+    overflow-x: auto;
+}
+
+.lifecycle-step {
+    min-width: 70px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    gap: 8px;
+
+    color: var(--text-tertiary);
+
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.lifecycle-number {
+    width: 30px;
+    height: 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid var(--border-hover);
+    border-radius: 50%;
+
+    font-family: var(--font-data);
+    font-size: 9px;
+}
+
+.lifecycle-step.active {
+    color: var(--amber);
+}
+
+.lifecycle-step.active .lifecycle-number {
+    border-color: var(--amber);
+
+    box-shadow: 0 0 12px var(--amber-glow);
+}
+
+.lifecycle-step.completed {
+    color: var(--text-secondary);
+}
+
+.lifecycle-step.completed .lifecycle-number {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+}
+
+.lifecycle-line {
+    flex: 1;
+
+    min-width: 30px;
+    height: 1px;
+
+    background: var(--border);
+}
+
+
+/* ========================================
+   Workspace Placeholder
+======================================== */
+
+.workspace-placeholder {
+    padding: 30px;
+}
+
+.workspace-placeholder h3 {
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+.workspace-placeholder p {
+    margin: 0;
+
+    color: var(--text-secondary);
+
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+
+/* ========================================
+   10. Mission Vehicle Workspace
+======================================== */
+
+.vehicle-workspace {
+    width: 100%;
+}
+
+
+/* ----------------------------------------
+   Vehicle Empty State
+---------------------------------------- */
+
+.workspace-empty {
+    min-height: 300px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    padding: 50px 30px;
+
+    text-align: center;
+
+    background: var(--card);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.workspace-empty-icon {
+    width: 54px;
+    height: 54px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 18px;
+
+    border: 1px solid var(--amber-dim);
+    border-radius: 50%;
+
+    color: var(--amber);
+
+    font-family: var(--font-data);
+    font-size: 16px;
+    font-weight: 800;
+
+    box-shadow: 0 0 20px var(--amber-glow);
+}
+
+.workspace-empty h3 {
+    margin-bottom: 8px;
+
+    color: var(--text-primary);
+
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.workspace-empty p {
+    max-width: 360px;
+
+    margin: 0;
+
+    color: var(--text-secondary);
+
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+
+/* ----------------------------------------
+   Vehicle Workspace Header
+---------------------------------------- */
+
+.vehicle-workspace-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 16px;
+}
+
+.vehicle-workspace-header h3 {
+    margin: 0;
+
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+
+/* ----------------------------------------
+   Vehicle Summary
+---------------------------------------- */
+
+.vehicle-summary-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 10px;
+
+    margin-bottom: 14px;
+}
+
+.vehicle-summary-grid .data-card {
+    min-height: 88px;
+
+    padding: 16px 18px;
+
+    background: var(--card);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+
+    transition:
+        border-color 0.15s ease,
+        background 0.15s ease;
+}
+
+.vehicle-summary-grid .data-card:hover {
+    border-color: var(--border-hover);
+    background: #202632;
+}
+
+.vehicle-summary-grid .data-value {
+    margin: 0;
+
+    font-size: 17px;
+    font-weight: 600;
+}
+
+
+/* ----------------------------------------
+   Vehicle Group
+---------------------------------------- */
+
+.vehicle-group-card {
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.vehicle-group-card .card-header {
+    padding: 17px 20px;
+}
+
+.vehicle-group-card .card-header h3 {
+    font-size: 16px;
+}
+
+
+/* ----------------------------------------
+   Vehicle Count Badge
+---------------------------------------- */
+
+.vehicle-count-badge {
+    min-width: 42px;
+    height: 32px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 10px;
+
+    border: 1px solid var(--amber-dim);
+    border-radius: 999px;
+
+    color: var(--amber);
+    background: rgba(255, 178, 56, 0.05);
+
+    font-family: var(--font-data);
+    font-size: 11px;
+}
+
+
+/* ----------------------------------------
+   Vehicle Grid
+---------------------------------------- */
+
+.mission-vehicle-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(300px, 1fr));
+
+    gap: 12px;
+
+    padding: 16px;
+}
+
+
+/* ----------------------------------------
+   Vehicle Card
+---------------------------------------- */
+
+.mission-vehicle-card {
+    position: relative;
+
+    min-width: 0;
+
+    padding: 18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.015),
+            transparent 45%
+        ),
+        var(--card);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+
+    transition:
+        border-color 0.15s ease,
+        transform 0.15s ease,
+        background 0.15s ease;
+}
+
+.mission-vehicle-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+}
+
+
+/* ----------------------------------------
+   Main Vehicle
+---------------------------------------- */
+
+.mission-vehicle-card.main-vehicle {
+    border-color: var(--amber-dim);
+
+    box-shadow:
+        inset 3px 0 0 var(--amber),
+        0 0 0 1px rgba(255, 178, 56, 0.03);
+}
+
+.mission-vehicle-card.main-vehicle:hover {
+    border-color: var(--amber);
+}
+
+
+/* ----------------------------------------
+   Vehicle Card Top
+---------------------------------------- */
+
+.vehicle-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 12px;
+
+    min-height: 24px;
+
+    margin-bottom: 14px;
+}
+
+.vehicle-card-top > div {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    flex-wrap: wrap;
+}
+
+.vehicle-card-label {
+    color: var(--text-tertiary);
+
+    font-family: var(--font-data);
+    font-size: 9px;
+    letter-spacing: 1px;
+
+    text-transform: uppercase;
+}
+
+
+/* ----------------------------------------
+   Main Vehicle Badge
+---------------------------------------- */
+
+.vehicle-main-badge {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 4px 7px;
+
+    border: 1px solid var(--amber-dim);
+    border-radius: 5px;
+
+    color: var(--amber);
+    background: rgba(255, 178, 56, 0.07);
+
+    font-family: var(--font-data);
+    font-size: 9px;
+    letter-spacing: 0.5px;
+}
+
+
+/* ----------------------------------------
+   Assignment Status
+---------------------------------------- */
+
+.vehicle-assignment-status {
+    flex-shrink: 0;
+
+    padding: 4px 7px;
+
+    border: 1px solid var(--border-hover);
+    border-radius: 5px;
+
+    color: var(--text-secondary);
+
+    font-family: var(--font-data);
+    font-size: 8px;
+    letter-spacing: 0.5px;
+}
+
+
+/* ----------------------------------------
+   Vehicle Identity
+---------------------------------------- */
+
+.vehicle-card-identity {
+    display: flex;
+    flex-direction: column;
+
+    gap: 5px;
+
+    margin-bottom: 16px;
+}
+
+.vehicle-number {
+    color: var(--text-primary);
+
+    font-size: 18px;
+    font-weight: 700;
+
+    letter-spacing: -0.3px;
+}
+
+.vehicle-type {
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+
+/* ----------------------------------------
+   Vehicle Specification
+---------------------------------------- */
+
+.vehicle-spec-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 8px;
+
+    margin-bottom: 16px;
+}
+
+.vehicle-spec-grid > div {
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+
+    padding: 9px 10px;
+
+    background: rgba(0, 0, 0, 0.12);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.vehicle-spec-grid span {
+    color: var(--text-tertiary);
+
+    font-family: var(--font-data);
+    font-size: 8px;
+    letter-spacing: 0.5px;
+}
+
+.vehicle-spec-grid strong {
+    color: var(--text-secondary);
+
+    font-family: var(--font-data);
+    font-size: 10px;
+}
+
+
+/* ----------------------------------------
+   Vehicle Personnel
+---------------------------------------- */
+
+.vehicle-personnel {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+
+    padding-top: 14px;
+
+    border-top: 1px solid var(--border);
+}
+
+.vehicle-person {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 5px;
+}
+
+.vehicle-person-label {
+    color: var(--text-tertiary);
+
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+
+.vehicle-person strong {
+    color: var(--text-primary);
+
+    font-size: 12px;
+    font-weight: 600;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vehicle-person small {
+    color: var(--text-tertiary);
+
+    font-family: var(--font-data);
+    font-size: 8px;
+}
+
+
+/* ----------------------------------------
+   Vehicle Footer
+---------------------------------------- */
+
+.vehicle-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-top: 16px;
+    padding-top: 12px;
+
+    border-top: 1px solid var(--border);
+
+    color: var(--text-tertiary);
+    font-size: 9px;
+}
+
+.vehicle-card-footer strong {
+    color: var(--success);
+
+    font-family: var(--font-data);
+    font-size: 9px;
+}
+
+
+/* ----------------------------------------
+   Vehicle Empty State Override
+---------------------------------------- */
+
+.vehicle-workspace .workspace-empty {
+    padding: 42px 20px;
+    text-align: center;
+}
+
+.vehicle-workspace .workspace-empty-icon {
+    width: 46px;
+    height: 46px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin: 0 auto 14px;
+
+    border: 1px solid var(--border-hover);
+    border-radius: 12px;
+
+    color: var(--amber);
+
+    font-family: var(--font-data);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.vehicle-workspace .workspace-empty h3 {
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.vehicle-workspace .workspace-empty p {
+    max-width: 360px;
+
+    margin: 0 auto 18px;
+
+    color: var(--text-tertiary);
+
+    font-size: 11px;
+    line-height: 1.7;
+}
+
+
+/* ========================================
+   11. Right Context
+======================================== */
+
+.mission-context {
+    padding: 24px 16px;
+
+    background: var(--panel);
+
+    border-left: 1px solid var(--border);
+}
+
+.context-header {
+    margin-bottom: 18px;
+}
+
+.context-header h2 {
+    margin: 0;
+    font-size: 17px;
+}
+
+.context-status {
+    padding: 18px;
+    margin-bottom: 10px;
+
+    border-color: var(--amber-dim);
+}
+
+.context-status-value {
+    display: block;
+
+    color: var(--amber);
+
+    font-family: var(--font-data);
+    font-size: 15px;
+}
+
+.context-card {
+    padding: 16px;
+    margin-bottom: 10px;
+
+    border-radius: var(--radius-md);
+}
+
+.context-card strong {
+    color: var(--text-primary);
+
+    font-size: 13px;
+
+    word-break: break-all;
+}
+
+.context-card .mono {
+    color: var(--amber);
+    font-size: 11px;
+}
+
+.context-footer {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 20px;
+
+    color: var(--text-tertiary);
+
+    font-family: var(--font-data);
+    font-size: 9px;
+}
+
+
+/* ========================================
+   12. Buttons
+======================================== */
+
+button {
+    min-height: 36px;
+
+    padding: 8px 13px;
+
+    border: 1px solid var(--border-hover);
+    border-radius: var(--radius-sm);
+
+    background: var(--card);
+    color: var(--text-primary);
+
+    font-size: 12px;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.15s ease;
+}
+
+button:hover {
+    border-color: var(--amber);
+    background: var(--panel);
+}
+
+.primary-button,
+#routeBtn {
+    background: var(--amber);
+
+    border-color: var(--amber);
+
+    color: #10131a;
+
+    font-weight: 700;
+}
+
+.primary-button:hover,
+#routeBtn:hover {
+    background: #ffc15c;
+    border-color: #ffc15c;
+    color: #10131a;
+}
+
+#clearRouteBtn {
+    border-color: rgba(255, 95, 95, 0.4);
+    color: var(--danger);
+}
+
+
+/* ========================================
+   13. Legacy Map Section
+======================================== */
+
+.legacy-map-section {
+    margin: 20px 28px 40px;
+    padding: 22px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.legacy-section-header {
+    margin-bottom: 16px;
+}
+
+.legacy-section-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.route-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+
+    gap: 8px;
+
+    margin-bottom: 14px;
+}
+
+.route-toolbar input,
+.form-group input,
+.form-group select {
+    min-height: 38px;
+
+    padding: 8px 10px;
+
+    background: var(--card);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    color: var(--text-primary);
+
+    outline: none;
+}
+
+.route-toolbar input {
+    width: 210px;
+}
+
+.route-toolbar input:focus,
+.form-group input:focus,
+.form-group select:focus {
+    border-color: var(--amber);
+
+    box-shadow:
+        0 0 0 3px var(--amber-glow);
+}
+
+.route-arrow {
+    color: var(--text-tertiary);
+    font-family: var(--font-data);
+}
+
+.gps-toggle {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 8px;
+
+    margin: 12px 0;
+
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+#map {
+    width: 100%;
+    height: 500px;
+
+    margin: 0;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+
+    overflow: hidden;
+}
+
+.legacy-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+
+/* ========================================
+   14. CCTV
+======================================== */
+
+#security-panel {
+    width: 100%;
+
+    margin-top: 14px;
+    padding: 18px;
+
+    background: var(--card);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+
+    color: var(--text-primary);
+}
+
+.security-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 14px;
+}
+
+.security-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.wall-container {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 8px;
+}
+
+.monitor-cell {
+    position: relative;
+
+    aspect-ratio: 16 / 9;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    background: #0b0d11;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
 .monitor-cell img {
     width: 100%;
     height: 100%;
-    object-fit: cover;         /* 讓影像完美填滿格子且不變形 */
+
+    object-fit: cover;
 }
 
-/* 沒訊號時的文字樣式（NO SIGNAL） */
 .monitor-cell .placeholder {
-    color: #444;
-    font-weight: bold;
-    font-size: 14px;
+    color: var(--text-tertiary);
+
+    font-family: var(--font-data);
+    font-size: 10px;
     letter-spacing: 2px;
 }
-/* 畫面底部的監視器名稱綠色標籤 */
+
 .monitor-cell .cam-name-label {
     position: absolute;
+
     bottom: 0;
     left: 0;
-    background-color: rgba(0, 0, 0, 0.75); /* 半透明黑底，確保字體清晰 */
-    color: #00ff00;                        /* 螢光綠字 */
-    font-size: 11px;
-    padding: 4px 6px;
+
     width: 100%;
-    box-sizing: border-box;                /* 防止內邊距把寬度撐爆 */
-    text-align: left;                      /* 名字靠左對齊 */
-    white-space: nowrap;                   /* 名字太長不換行 */
-    overflow: hidden;                      /* 超出範圍隱藏 */
-    text-overflow: ellipsis;               /* 超出時末端顯示 ... */
+
+    padding: 5px 7px;
+
+    background: rgba(16, 19, 26, 0.85);
+
+    color: var(--text-secondary);
+
+    font-family: var(--font-data);
+    font-size: 9px;
+
+    text-align: left;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-/* ===== 車型設定彈出視窗 ===== */
+
+
+/* ========================================
+   15. Vehicle Modal
+======================================== */
+
 .modal-overlay {
     display: none;
+
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    inset: 0;
+
     z-index: 1000;
-    justify-content: center;
+
     align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(5, 7, 10, 0.78);
 }
 
 .modal-overlay.active {
@@ -119,66 +1582,93 @@ button:hover {
 }
 
 .modal-box {
-    background-color: #1a1a1a;
-    color: #00ff00;
-    font-family: 'Courier New', Courier, monospace;
-    border: 2px solid #00ff00;
-    border-radius: 12px;
-    padding: 20px;
-    width: 90%;
-    max-width: 360px;
-    box-shadow: 0 4px 20px rgba(0, 255, 0, 0.25);
+    width: min(100%, 420px);
+
+    padding: 22px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border-hover);
+    border-radius: var(--radius-lg);
+
+    color: var(--text-primary);
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.45);
 }
 
 .modal-header {
     display: flex;
+    align-items: flex-start;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
+
+    margin-bottom: 20px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
 }
 
 .modal-close {
-    background: none;
-    border: none;
-    color: #00ff00;
-    font-size: 18px;
-    cursor: pointer;
-    padding: 0 6px;
+    width: 30px;
+
+    min-height: 30px;
+
+    padding: 0;
+
+    border: 0;
+    background: transparent;
+
+    color: var(--text-secondary);
+
+    font-size: 20px;
 }
 
-.truck-options {
-    display: none;
-    border-left: 3px solid #00ff00;
-    padding-left: 10px;
-    margin: 10px 0;
+.modal-close:hover {
+    color: var(--amber);
+
+    border: 0;
+    background: transparent;
 }
 
 .form-group {
-    margin-bottom: 10px;
-    text-align: left;
+    margin-bottom: 14px;
 }
 
 .form-group label {
     display: block;
-    font-size: 13px;
+
+    margin-bottom: 6px;
+
+    color: var(--text-secondary);
+    font-size: 11px;
 }
 
 .form-group input,
 .form-group select {
-    margin-top: 4px;
-    padding: 4px;
     width: 100%;
-    box-sizing: border-box;
+}
+
+.truck-options {
+    display: none;
+
+    margin: 12px 0 16px;
+    padding-left: 14px;
+
+    border-left: 2px solid var(--amber-dim);
 }
 
 #btn-confirm-vehicle {
     width: 100%;
-    margin-top: 8px;
+    margin-top: 6px;
 }
 
+
 /* ========================================
-   Route Editor 控制點
-   ======================================== */
+   16. Route Editor
+   保留既有 Route Navigation 相容樣式
+======================================== */
 
 .route-control-marker {
     width: 28px;
@@ -190,7 +1680,6 @@ button:hover {
 
     cursor: grab;
 
-    /* 確保控制點在 CCTV Marker 上方 */
     z-index: 1000;
 }
 
@@ -198,20 +1687,21 @@ button:hover {
     width: 18px;
     height: 18px;
 
-    border-radius: 50%;
-
-    background: #ffffff;
-    border: 4px solid #4285F4;
-
-    box-shadow:
-        0 2px 6px rgba(0, 0, 0, 0.45),
-        0 0 0 2px rgba(255, 255, 255, 0.8);
-
     display: flex;
     align-items: center;
     justify-content: center;
 
     box-sizing: border-box;
+
+    border-radius: 50%;
+
+    background: #ffffff;
+
+    border: 4px solid var(--amber);
+
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.45),
+        0 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
 .route-control-marker:hover {
@@ -224,4 +1714,145 @@ button:hover {
 
 .route-control-marker:active .route-control-dot {
     transform: scale(1.25);
+}
+
+
+/* ========================================
+   17. Responsive
+======================================== */
+
+@media (max-width: 1100px) {
+    .mission-center {
+        grid-template-columns:
+            230px
+            minmax(0, 1fr);
+    }
+
+    .mission-context {
+        display: none;
+    }
+}
+
+
+@media (max-width: 900px) {
+    .vehicle-summary-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
+
+
+@media (max-width: 800px) {
+    .command-header {
+        height: auto;
+
+        padding: 16px;
+
+        align-items: flex-start;
+
+        gap: 14px;
+
+        flex-direction: column;
+    }
+
+    .system-status {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .mission-center {
+        display: block;
+    }
+
+    .mission-sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .mission-list {
+        display: flex;
+
+        gap: 6px;
+
+        overflow-x: auto;
+    }
+
+    .mission-list-item {
+        min-width: 210px;
+        margin-bottom: 0;
+    }
+
+    .mission-workspace {
+        padding: 20px 16px 30px;
+    }
+
+    .overview-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .mission-description {
+        grid-template-columns: 1fr;
+    }
+
+    .legacy-map-section {
+        margin: 14px 16px 30px;
+        padding: 14px;
+    }
+
+    .route-toolbar {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .route-toolbar input {
+        width: 100%;
+    }
+
+    .wall-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+@media (max-width: 600px) {
+    .vehicle-workspace-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .vehicle-summary-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .mission-vehicle-grid {
+        grid-template-columns: 1fr;
+        padding: 12px;
+    }
+}
+
+
+@media (max-width: 500px) {
+    .overview-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .workspace-tabs {
+        overflow-x: auto;
+    }
+
+    .workspace-tab {
+        min-width: max-content;
+    }
+}
+
+
+@media (max-width: 420px) {
+    .vehicle-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .vehicle-personnel {
+        grid-template-columns: 1fr;
+    }
 }

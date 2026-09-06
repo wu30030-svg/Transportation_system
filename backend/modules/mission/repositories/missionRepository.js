@@ -1,4 +1,4 @@
-const pool = require("../../../config/db");
+﻿const pool = require("../../../config/db");
 
 // 建立 Mission
 async function createMission({
@@ -35,20 +35,23 @@ async function createMission({
 
 
 // 取得單一 Mission
-async function findMissionById(id) {
+async function findMissionById(id, db = pool) {
+
     const query = `
         SELECT *
         FROM missions
         WHERE id = $1;
     `;
 
-    const result = await pool.query(query, [id]);
+    const result = await db.query(query, [id]);
 
     return result.rows[0] || null;
 }
 
+
 // 取得 Mission 列表
 async function findAllMissions() {
+
     const query = `
         SELECT *
         FROM missions
@@ -60,6 +63,7 @@ async function findAllMissions() {
     return result.rows;
 }
 
+
 // 更新 Mission
 async function updateMission(
     id,
@@ -70,6 +74,7 @@ async function updateMission(
         startTime
     }
 ) {
+
     const query = `
         UPDATE missions
         SET
@@ -95,8 +100,14 @@ async function updateMission(
     return result.rows[0] || null;
 }
 
+
 // 更新 Mission Status
-async function updateMissionStatus(id, status) {
+async function updateMissionStatus(
+    id,
+    status,
+    db = pool
+) {
+
     const query = `
         UPDATE missions
         SET
@@ -106,13 +117,14 @@ async function updateMissionStatus(id, status) {
         RETURNING *;
     `;
 
-    const result = await pool.query(query, [
+    const result = await db.query(query, [
         status,
         id
     ]);
 
     return result.rows[0] || null;
 }
+
 
 module.exports = {
     createMission,

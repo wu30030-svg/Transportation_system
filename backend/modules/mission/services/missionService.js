@@ -331,6 +331,25 @@ async function updateMissionStatus(id, newStatus) {
             newStatus
         );
 
+    // Mission 結束後，釋放車輛與人員配置資源
+    if (
+        newStatus === MISSION_STATUS.COMPLETED ||
+        newStatus === MISSION_STATUS.ABORTED ||
+        newStatus === MISSION_STATUS.CANCELLED
+    ) {
+
+        const assignmentStatus =
+            newStatus === MISSION_STATUS.COMPLETED
+                ? "COMPLETED"
+                : "CANCELLED";
+
+        await missionVehicleAssignmentRepository
+            .releaseAssignmentsByMissionId(
+                id,
+                assignmentStatus
+            );
+    }
+
     return updatedMission;
 }
 

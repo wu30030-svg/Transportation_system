@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 
 const router = express.Router();
 
@@ -16,6 +16,7 @@ router.use("/cameras", require("./cameras"));
 
 router.use("/routes", require("./routes"));
 
+
 // ========================================
 // Auth Module
 // ========================================
@@ -24,6 +25,7 @@ router.use(
     "/auth",
     require("../modules/auth/routes/auth")
 );
+
 
 // ========================================
 // Mission Module
@@ -36,6 +38,16 @@ router.use(
 
 
 // ========================================
+// Mission Run Module
+// ========================================
+
+router.use(
+    "/missions",
+    require("../modules/mission/routes/missionRuns")
+);
+
+
+// ========================================
 // Mission Template Module
 // ========================================
 
@@ -43,6 +55,7 @@ router.use(
     "/mission-templates",
     require("../modules/mission/routes/missionTemplates")
 );
+
 
 // ========================================
 // Vehicle
@@ -53,6 +66,7 @@ router.use(
     require("../modules/mission/routes/vehicles")
 );
 
+
 // ========================================
 // Personnel
 // ========================================
@@ -62,6 +76,7 @@ router.use(
     require("../modules/mission/routes/personnel")
 );
 
+
 // ========================================
 // Mission Vehicle Assignment
 // ========================================
@@ -70,5 +85,6 @@ router.use(
     "/mission-vehicle-assignments",
     require("../modules/mission/routes/missionVehicleAssignments")
 );
+
 
 module.exports = router;

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 戰略中心 - 路線監視面板系統 (v1.6.0)
  * 檔案 1: global-state.js - 全域狀態與配置管理中心
  */
@@ -25,16 +25,9 @@ var currentDraggedCam = null;                        // HTML5 拖曳暫存的 CC
 var currentInfoWindow = null;
 var infoWindowInterval = null;
 
-// 📡 GPS 戰術定位變數
-var userLocationMarker = null;   // 全域使用者定位標記 (AdvancedMarkerElement)
-var userLocationWatchId = null;  // Geolocation 即時監聽器 
-
 // ⚡ v1.6.0 效能防禦升級：快取池與狀態旗標
 var markerCache = new Map();     // Marker 實例快取池 (鍵: cam_id, 值: AdvancedMarkerElement)
 var visibleMarkerIds = new Set(); // 目前掛載於地圖上的 Marker ID 集合
 var isRouteMode = false;          // 是否處於導航模式 (True 時暫停 Viewport 動態渲染)
 var routeCamIds = new Set();       // 存放導航篩選出的 CCTV ID 集合
-
-var selectedVehicleType = 'CAR';   // CAR / TRUCK
 var isRouteEditable = false;        // 是否進入手動拖曳調整模式
-var truckProfile = { height: 3.8, width: 2.5, weight: 20000 }; // 公尺/公斤，可依表單覆寫
