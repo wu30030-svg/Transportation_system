@@ -16,6 +16,8 @@ router.use("/cameras", require("./cameras"));
 
 router.use("/routes", require("./routes"));
 
+router.use("/cctv", require("../modules/cctv/routes/cctv"));
+
 
 // ========================================
 // Auth Module
@@ -36,6 +38,14 @@ router.use(
     require("../modules/mission/routes/missions")
 );
 
+// ========================================
+// Mission Monitoring
+// ========================================
+
+router.use(
+    "/missions",
+    require("../modules/mission/routes/missionMonitoring")
+);
 
 // ========================================
 // Mission Run Module
@@ -46,6 +56,14 @@ router.use(
     require("../modules/mission/routes/missionRuns")
 );
 
+// ========================================
+// Tracking Module
+// ========================================
+
+router.use(
+    "/tracking",
+    require("../modules/tracking/routes/tracking")
+);
 
 // ========================================
 // Mission Template Module

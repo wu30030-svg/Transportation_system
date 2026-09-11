@@ -18,6 +18,25 @@
 let editingMissionVehicleAssignmentId = null;
 
 // ========================================
+// Get Main Mission Vehicle
+// ========================================
+
+function getMainMissionVehicle() {
+
+    const assignments = currentAssignments || [];
+
+    const mainAssignment = assignments.find(
+        assignment => assignment.is_main_vehicle === true
+    );
+
+    if (!mainAssignment) {
+        return null;
+    }
+
+    return mainAssignment.vehicle || null;
+}
+
+// ========================================
 // Mission Vehicle Edit Permission
 // ========================================
 
@@ -894,4 +913,12 @@ async function handleMissionVehicleConfirm() {
 
     }
 
+}
+
+const vehiclesNextButton = document.getElementById("vehicles-next-btn");
+
+if (vehiclesNextButton) {
+    vehiclesNextButton.addEventListener("click", () => {
+        switchWorkspace("route");
+    });
 }

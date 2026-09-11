@@ -2,12 +2,57 @@
  * 戰略中心 - 路線監視面板系統 (v1.6.0)
  * 檔案 4: monitor-wall.js - 📺 2x2 四分格電視牆控制中心
  */
+
+async function addCamToMissionMonitoring(cam) {
+
+    if (!currentMission) {
+        alert("目前沒有選擇任務。");
+        return;
+    }
+
+    if (!cam || !cam.camera_id) {
+        console.error("[Mission Monitoring] CCTV 資料無效：", cam);
+        return;
+    }
+
+    try {
+
+        const response =
+            await createMissionMonitoring(
+                currentMission.id,
+                cam.camera_id
+            );
+
+        console.log(
+            "[Mission Monitoring] CCTV 派件成功：",
+            response
+        );
+
+        alert(
+            `已將「${cam.camera_name}」加入任務監控。`
+        );
+
+    } catch (error) {
+
+        console.error(
+            "[Mission Monitoring] CCTV 派件失敗：",
+            error
+        );
+
+        alert(
+            "CCTV 派件失敗：" +
+            error.message
+        );
+
+    }
+}
+
 /**
  * 手動點擊派件：循環填入 1~4 頻道
  */
 function addCamToWallManually(cam) {
     setWallSlot(manualSlotIndex, cam);
-    manualSlotIndex = (manualSlotIndex + 1) % 4; 
+    manualSlotIndex = (manualSlotIndex + 1) % 4;
 }
 
 /**
@@ -39,7 +84,7 @@ function setWallSlot(i, cam) {
                 border-radius:3px;
                 font-size:12px;
                 font-family:monospace;">
-                📡 CH${i+1} <br>
+                📡 CH${i + 1} <br>
                 ${cam.camera_name}
             </div>
             <img
@@ -58,7 +103,7 @@ function setWallSlot(i, cam) {
         }
     }, 3000);
 
-    console.log(`[電視牆] CH${i+1} 已成功派件：${cam.camera_name}`);
+    console.log(`[電視牆] CH${i + 1} 已成功派件：${cam.camera_name}`);
 }
 
 /**
@@ -87,7 +132,7 @@ function clearAllWallSlots() {
 function handleDragStart(event, cam) {
     event.dataTransfer.setData("application/json", JSON.stringify(cam));
     event.dataTransfer.effectAllowed = "copyMove";
-    
+
     // 備援機制：防止部分瀏覽器阻擋 dataTransfer，直接存於全域
     window.currentDraggedCam = cam;
     console.log(`[滑鼠拖曳] 已擷取監視訊號：${cam.camera_name}`);
@@ -133,6 +178,7 @@ function setupWallDragAndDrop() {
 
 // 綁定全域，確保 HTML5 事件與跨檔案調用順暢
 window.addCamToWallManually = addCamToWallManually;
+window.addCamToMissionMonitoring = addCamToMissionMonitoring;
 window.clearAllWallSlots = clearAllWallSlots;
 window.handleDragStart = handleDragStart;
 window.setupWallDragAndDrop = setupWallDragAndDrop;

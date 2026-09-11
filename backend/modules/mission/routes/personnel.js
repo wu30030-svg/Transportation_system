@@ -23,6 +23,11 @@ router.get(
     personnelController.getAllPersonnel
 );
 
+// 綁定 Personnel 對應的 User
+router.post(
+    "/:id/user",
+    personnelController.bindPersonnelUser
+);
 
 // 取得單一 Personnel
 router.get(

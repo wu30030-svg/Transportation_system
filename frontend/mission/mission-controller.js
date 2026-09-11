@@ -1,4 +1,5 @@
 ﻿let currentMission = null;
+let currentMissionRun = null;
 let currentAssignments = [];
 
 const missionStatusText = {
@@ -67,11 +68,32 @@ function setText(id, value) {
 
 document.addEventListener("DOMContentLoaded", async () => {
 
+    // ========================================
+    // Authentication Gate
+    // ========================================
+
+    if (
+        typeof isAuthenticated !== "function" ||
+        !isAuthenticated()
+    ) {
+
+        console.log(
+            "[Mission Center] 尚未登入，暫停 Mission Center 初始化。"
+        );
+
+        return;
+
+    }
+
+
+    console.log(
+        "[Mission Center] 已登入，初始化 Mission Center。"
+    );
+
+
     setupWorkspaceTabs();
 
     await loadMissions();
 
-}
-);
-
+});
 document.getElementById("refreshMissionsBtn")?.addEventListener("click", loadMissions);

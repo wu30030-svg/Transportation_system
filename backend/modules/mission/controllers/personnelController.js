@@ -150,6 +150,45 @@ async function updatePersonnel(req, res) {
     }
 }
 
+// ========================================
+// Bind Personnel To User
+// ========================================
+
+async function bindPersonnelUser(req, res) {
+
+    try {
+
+        const { id } = req.params;
+        const { userId } = req.body;
+
+        const personnel =
+            await personnelService.bindPersonnelUser(
+                id,
+                userId
+            );
+
+        return res.status(200).json({
+            success: true,
+            data: personnel
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Bind Personnel User Error:",
+            error
+        );
+
+        return res.status(
+            error.statusCode || 500
+        ).json({
+            success: false,
+            message:
+                error.message ||
+                "Internal Server Error"
+        });
+    }
+}
 
 // ========================================
 // Delete Personnel
@@ -195,5 +234,6 @@ module.exports = {
     getPersonnelById,
     getAllPersonnel,
     updatePersonnel,
+    bindPersonnelUser,
     deletePersonnel
 };

@@ -11,16 +11,38 @@ const MISSION_API_BASE = `${CONFIG.API_BASE_URL}/api/missions`;
 
 async function missionApiRequest(url, options = {}) {
 
-    const response = await fetch(url, {
+    const token =
+        typeof getAuthToken === "function"
+            ? getAuthToken()
+            : null;
 
-        headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            ...(options.headers || {})
-        },
 
-        ...options
+    const headers = {
 
-    });
+        "Content-Type":
+            "application/json; charset=utf-8",
+
+        ...(options.headers || {})
+
+    };
+
+
+    if (token) {
+
+        headers.Authorization =
+            `Bearer ${token}`;
+
+    }
+
+
+    const response =
+        await fetch(
+            url,
+            {
+                ...options,
+                headers
+            }
+        );
 
 
     const data =
@@ -117,6 +139,74 @@ async function updateMissionStatus(
 
 }
 
+// ========================================
+// Mission Run
+// ========================================
+
+async function startMissionRun(
+    missionId
+) {
+
+    return await missionApiRequest(
+
+        `${MISSION_API_BASE}/${missionId}/run`,
+
+        {
+            method: "POST"
+        }
+
+    );
+
+}
+
+
+async function getMissionRuns(
+    missionId
+) {
+
+    return await missionApiRequest(
+
+        `${MISSION_API_BASE}/${missionId}/runs`
+
+    );
+
+}
+
+
+async function completeMissionRun(
+    missionId,
+    missionRunId
+) {
+
+    return await missionApiRequest(
+
+        `${MISSION_API_BASE}/${missionId}/runs/${missionRunId}/complete`,
+
+        {
+            method: "POST"
+        }
+
+    );
+
+}
+
+
+async function abortMissionRun(
+    missionId,
+    missionRunId
+) {
+
+    return await missionApiRequest(
+
+        `${MISSION_API_BASE}/${missionId}/runs/${missionRunId}/abort`,
+
+        {
+            method: "POST"
+        }
+
+    );
+
+}
 
 // ========================================
 // Mission Route
@@ -205,6 +295,88 @@ async function createMissionVehicleAssignment(
 
     );
 
+}
+
+// ========================================
+// Mission Monitoring
+// ========================================
+
+async function getMissionMonitorings(
+    missionId
+) {
+    return await missionApiRequest(
+        `${MISSION_API_BASE}/${missionId}/monitoring`
+    );
+}
+
+async function createMissionMonitoring(
+    missionId,
+    cameraId
+) {
+    return await missionApiRequest(
+        `${MISSION_API_BASE}/${missionId}/monitoring`,
+        {
+            method: "POST",
+            body: JSON.stringify({
+                cameraId
+            })
+        }
+    );
+}
+
+async function deleteMissionMonitoring(
+    missionId,
+    monitoringId
+) {
+    return await missionApiRequest(
+        `${MISSION_API_BASE}/${missionId}/monitoring/${monitoringId}`,
+        {
+            method: "DELETE"
+        }
+    );
+}
+
+async function pinMissionMonitoring(
+    missionId,
+    monitoringId
+) {
+    return await missionApiRequest(
+        `${MISSION_API_BASE}/${missionId}/monitoring/${monitoringId}/pin`,
+        {
+            method: "PATCH",
+            body: JSON.stringify({})
+        }
+    );
+}
+
+async function unpinMissionMonitoring(
+    missionId,
+    monitoringId
+) {
+    return await missionApiRequest(
+        `${MISSION_API_BASE}/${missionId}/monitoring/${monitoringId}/unpin`,
+        {
+            method: "PATCH",
+            body: JSON.stringify({})
+        }
+    );
+}
+
+async function swapMissionMonitoring(
+    missionId,
+    monitoringIdA,
+    monitoringIdB
+) {
+    return await missionApiRequest(
+        `${MISSION_API_BASE}/${missionId}/monitoring/reorder`,
+        {
+            method: "PATCH",
+            body: JSON.stringify({
+                monitoringIdA,
+                monitoringIdB
+            })
+        }
+    );
 }
 
 // ========================================

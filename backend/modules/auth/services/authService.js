@@ -1,8 +1,9 @@
-const bcrypt = require("bcrypt");
+﻿const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const authRepository = require("../repositories/authRepository");
 
 async function login(username, password) {
-    // 1. 基本輸入檢查
+    // 1. 驗證登入帳號
     if (!username || username.trim() === "") {
         const error = new Error("Username is required");
         error.statusCode = 400;
@@ -15,7 +16,7 @@ async function login(username, password) {
         throw error;
     }
 
-    // 2. 找使用者
+    // 2. 查詢使用者
     const user = await authRepository.findUserByUsername(
         username.trim()
     );
@@ -45,12 +46,36 @@ async function login(username, password) {
         throw error;
     }
 
-    // 5. 回傳登入所需的安全資料
-    return {
-        id: user.id,
+    // 5. 建立登入身份
+    const identity = {
+        user_id: user.id,
         username: user.username,
-        name: user.name,
-        role_id: user.role_id
+        role_id: user.role_id,
+        personnel_id: user.personnel_id || null
+    };
+
+    // 6. 簽發 JWT
+    const token = jwt.sign(
+        identity,
+        process.env.JWT_SECRET,
+        {
+            expiresIn: "8h"
+        }
+    );
+
+    // 7. 回傳登入結果
+    return {
+        user: {
+            id: user.id,
+            username: user.username,
+            name: user.name,
+            role_id: user.role_id,
+
+            personnel_id: user.personnel_id || null,
+            personnel_number: user.personnel_number || null,
+            personnel_name: user.personnel_name || null
+        },
+        token
     };
 }
 

@@ -10,11 +10,11 @@ async function fetchCameraData() {
     try {
         const bounds = map.getBounds();
 
-        if (!bounds)return;
-        
+        if (!bounds) return;
+
         const ne = bounds.getNorthEast();
         const sw = bounds.getSouthWest();
-        
+
         const url =
             `${CONFIG.API_BASE_URL}/api/cameras/viewport` +
             `?minLat=${sw.lat()}` +
@@ -29,12 +29,12 @@ async function fetchCameraData() {
         allCams = await response.json();
 
         console.log("目前載入 CCTV：", allCams.length);
-        
+
 
         updateMarkersInViewport();
 
     }
-    catch(err){
+    catch (err) {
 
         console.error(err);
 
@@ -60,56 +60,56 @@ function updateMarkersInViewport() {
     const markersToAddToCluster = [];
 
     allCams.forEach(cam => {
-    const lat = Number(cam.latitude);
-    const lng = Number(cam.longitude);
+        const lat = Number(cam.latitude);
+        const lng = Number(cam.longitude);
 
-    if (isNaN(lat) || isNaN(lng)) return;
+        if (isNaN(lat) || isNaN(lng)) return;
 
-    const latLng = new google.maps.LatLng(lat, lng);
+        const latLng = new google.maps.LatLng(lat, lng);
 
-    if (bounds.contains(latLng)) {
+        if (bounds.contains(latLng)) {
 
-        const camId = cam.camera_id;
+            const camId = cam.camera_id;
 
-        currentVisibleIds.add(camId);
+            currentVisibleIds.add(camId);
 
-        let marker = markerCache.get(camId);
+            let marker = markerCache.get(camId);
 
-        if (!marker) {
+            if (!marker) {
 
-            marker = new google.maps.marker.AdvancedMarkerElement({
+                marker = new google.maps.marker.AdvancedMarkerElement({
 
-                position: latLng,
+                    position: latLng,
 
-                map,
+                    map,
 
-                title: cam.camera_name,
+                    title: cam.camera_name,
 
-                gmpClickable: true
+                    gmpClickable: true
 
-            });
+                });
 
-            marker.addEventListener("gmp-click", () => {
+                marker.addEventListener("gmp-click", () => {
 
-                openMonitorInfoWindow(marker, cam);
+                    openMonitorInfoWindow(marker, cam);
 
-            });
+                });
 
-            markerCache.set(camId, marker);
+                markerCache.set(camId, marker);
 
-        } else {
+            } else {
 
-            marker.map = map;
+                marker.map = map;
+
+            }
+
+            visibleMarkerIds.add(camId);
+
+            markersToAddToCluster.push(marker);
 
         }
 
-        visibleMarkerIds.add(camId);
-
-        markersToAddToCluster.push(marker);
-
-    }
-
-});
+    });
 
     // 處理離開可視範圍的標記 (卸載 map 釋放 DOM，保留實例於快取)
     for (let camId of visibleMarkerIds) {
@@ -158,8 +158,8 @@ function openMonitorInfoWindow(marker, cam) {
                          onerror="this.src='https://placehold.co/640x360/000000/444444?text=NO+SIGNAL'">
                 </div>
                 <button id="addCamBtn"
-                        style="margin-top:8px; width:100%; padding:6px; background:#007bff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">
-                        點擊按鈕派件 (CH${nextChLabel})
+                    style="margin-top:8px; width:100%; padding:6px; background:#007bff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">
+                    加入任務監控
                 </button>
             </div>
         `
@@ -171,7 +171,7 @@ function openMonitorInfoWindow(marker, cam) {
         const btn = document.getElementById("addCamBtn");
         if (btn) {
             btn.addEventListener("click", () => {
-                window.addCamToWallManually(cam);
+                window.addCamToMissionMonitoring(cam);
             });
         }
 
@@ -236,7 +236,7 @@ function renderRouteMarkers(matchedCams) {
 
                 position: { lat, lng },
 
-                map,    
+                map,
 
                 title: cam.camera_name,
 
@@ -275,17 +275,17 @@ function renderRouteMarkers(matchedCams) {
  * 🔄 取消導航 / 重置地圖：恢復全圖視域動態渲染
  */
 function resetMapToAllCameras() {
-  console.log("[導航渲染] 取消導航模式，恢復一般視域動態渲染...");
-  isRouteMode = false;
+    console.log("[導航渲染] 取消導航模式，恢復一般視域動態渲染...");
+    isRouteMode = false;
 
-  // 移除導航折線
-  if (currentRoutePolyline) {
-    currentRoutePolyline.setMap(null);
-    currentRoutePolyline = null;
-  }
+    // 移除導航折線
+    if (currentRoutePolyline) {
+        currentRoutePolyline.setMap(null);
+        currentRoutePolyline = null;
+    }
 
-  // 重新觸發動態 Viewport 渲染，恢復當前畫面內所有 CCTV
-  updateMarkersInViewport();
+    // 重新觸發動態 Viewport 渲染，恢復當前畫面內所有 CCTV
+    updateMarkersInViewport();
 }
 
 // 綁定全域

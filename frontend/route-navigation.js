@@ -20,325 +20,316 @@ let originalTruckProfile = null;
 // 第一次完成路線規劃後保存。
 // 後續編輯不可以覆蓋這份資料。
 let originalRoutePath = [];
-
 let currentRoutePath = [];
+let currentRouteStartCoord = null;
+let currentRouteEndCoord = null;
 
 // 主要路線規劃
 
 async function calculateAndDisplayRoute() {
+    if (currentMission?.status === "READY") {
+        alert("任務已進入待執行階段，路線已固定，無法重新規劃。");
+        return;
+    }
+    const mainVehicle = getMainMissionVehicle();
 
+    if (!mainVehicle) {
+        alert("請先在「02 車輛」設定主車，才能進行路線規劃。");
+        return;
+    }
+    console.log("Mission Main Vehicle:", mainVehicle);
     const start = document.getElementById("startInput").value;
-
     const end = document.getElementById("endInput").value;
-
-    const selectedVehicleType = document.getElementById("vehicle-type")?.value || "car";
-
+    const selectedVehicleType = mainVehicle.vehicle_type === "MILITARY_MEDIUM_TRUCK" ? "truck" : "car";
     document.getElementById("clearRouteBtn").style.display = "inline-block";
-
     if (!start || !end) {
-
         window.alert("請輸入起始地與目的地！");
         return;
-
     }
-
     // 清除舊路線
-
     clearCurrentRoute();
-
     let decodedPath = null;
-
     try {
-
         // 大貨車
-
         if (selectedVehicleType === "truck") {
-
             const truckProfile = {
-                height: parseFloat(document.getElementById("truck-height")?.value) || 4.0,
-                width: parseFloat(document.getElementById("truck-width")?.value) || 2.5,
-                weightKg: (parseFloat(document.getElementById("truck-weight")?.value) || 20) * 1000,
-                loadType: document.getElementById("truck-load-type")?.value || ""
+                height: mainVehicle.vehicle_height, width: mainVehicle.vehicle_width,
+                weightKg: mainVehicle.vehicle_weight, loadType: mainVehicle.vehicle_load_type || ""
             };
-
             // 保存這次任務使用的車輛規格
-
             originalTruckProfile = { ...truckProfile };
             decodedPath = await calculateTruckRoute(start, end, truckProfile);
-
         }
-
         // 小客車
-
         else {
-
             decodedPath = await calculateCarRoute(start, end);
-
         }
-
     }
-
     catch (error) {
-
         console.error("[路線規劃失敗]", error);
-
         window.alert("路線規劃失敗，請確認地址正確，且相關 API 已啟用。");
-
         return;
-
     }
-
     if (!decodedPath || decodedPath.length === 0) {
-
         window.alert("未找到有效路線");
         return;
-
     }
-
     // 畫出完整道路路線
-
     drawRoutePolyline(decodedPath);
-
     // 顯示路線編輯按鈕
+    if (currentMission?.status === "READY") {
+        hideRouteEditorButtons();
 
-    showRouteEditButtons();
+        const resetButton = document.getElementById("resetRouteBtn");
+        if (resetButton) {
+            resetButton.style.display = "none";
+        }
 
-    const resetButton =
-        document.getElementById("resetRouteBtn");
+        console.log("[Route] Mission 已 READY，路線編輯功能已鎖定。");
+    } else {
+        showRouteEditButtons();
 
-    if (resetButton) {
-        resetButton.style.display = "inline-block";
+        const resetButton = document.getElementById("resetRouteBtn");
+        if (resetButton) {
+            resetButton.style.display = "inline-block";
+        }
     }
-
     // 查詢沿線 CCTV
-
     try {
-
         const result = await fetchRouteCameras(decodedPath);
-
         console.log("[Route CCTV]", result);
-
         renderRouteMarkers(result.cameras);
-
     }
-
-    catch (error) {
-
-        console.error("[Route CCTV Error]", error);
-
-    }
-
+    catch (error) { console.error("[Route CCTV Error]", error); }
+    // 保存目前路線
+    currentRoutePath = decodedPath.map(point => new google.maps.LatLng(point.lat(), point.lng()));
     // 大貨車才建立控制點
-
     if (selectedVehicleType === "truck") {
-
         // 保存原始路線
-        originalRoutePath = decodedPath.map(point => new google.maps.LatLng(point.lat(), point.lng()));
-
-        // 保存目前路線
-        currentRoutePath = originalRoutePath.map(point => new google.maps.LatLng(point.lat(), point.lng()));
-
+        originalRoutePath = currentRoutePath.map(point => new google.maps.LatLng(point.lat(), point.lng()));
         // 控制點基準
-        routeEditPath = simplifyRoutePath(
-            currentRoutePath,
-            20
-        );
-
+        routeEditPath = simplifyRoutePath(currentRoutePath, 20);
     }
-
 }
-
 // 路線編輯按鈕 UI
-
 function showRouteEditButtons() {
-
-    const editButton =
-        document.getElementById("editRouteBtn");
-
-    if (editButton) {
-        editButton.style.display = "inline-block";
-    }
-
+    const editButton = document.getElementById("editRouteBtn");
+    if (editButton) { editButton.style.display = "inline-block"; }
+    const confirmButton = document.getElementById("confirmRouteBtn");
+    if (confirmButton) { confirmButton.style.display = "inline-block"; }
 }
-
-
 function hideRouteEditButtons() {
-
-    const editButton =
-        document.getElementById("editRouteBtn");
-
-    if (editButton) {
-        editButton.style.display = "none";
-    }
-
+    const editButton = document.getElementById("editRouteBtn");
+    if (editButton) { editButton.style.display = "none"; }
 }
-
 // 小客車路線
 // Google Routes API
-
 async function calculateCarRoute(start, end) {
-
     console.log("[系統] 正在呼叫 Google Routes API...");
-
-
+    const originCoord = await geocodeAddress(start);
+    const destCoord = await geocodeAddress(end);
+    currentRouteStartCoord = originCoord;
+    currentRouteEndCoord = destCoord;
     const { Route } = await google.maps.importLibrary("routes");
-
     const response = await Route.computeRoutes({
-
-        origin: start,
-        destination: end,
-        travelMode: "DRIVING",
-        routingPreference: "TRAFFIC_AWARE",
-        fields: [
-            "path",
-            "viewport"
-        ]
-
+        origin: start, destination: end,
+        travelMode: "DRIVING", routingPreference: "TRAFFIC_AWARE",
+        fields: ["path", "viewport"]
     });
-
-
     const route = response?.routes?.[0];
-
-    if (!route) {
-
-        return null;
-
-    }
-
+    if (!route) { return null; }
     // 自動縮放地圖
-
-    if (route.viewport) {
-
-        map.fitBounds(route.viewport);
-
-    }
-
+    if (route.viewport) { map.fitBounds(route.viewport); }
     else if (route.path?.length) {
-
         const bounds = new google.maps.LatLngBounds();
-
         route.path.forEach(latLng => bounds.extend(latLng));
-
         map.fitBounds(bounds);
-
     }
-
     return route.path;
-
 }
-
 // 大貨車路線
 // Backend → Azure Maps
-
 async function calculateTruckRoute(start, end, truckProfile) {
-
     console.log("[Truck Route] 正在取得地址座標...");
-
     const originCoord = await geocodeAddress(start);
-
     const destCoord = await geocodeAddress(end);
-
+    currentRouteStartCoord = originCoord;
+    currentRouteEndCoord = destCoord;
     console.log("[Truck Route] Origin:", originCoord);
-
     console.log("[Truck Route] Destination:", destCoord);
-
     const response = await fetch(`${CONFIG.API_BASE_URL}/api/routes/truck`, {
-
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-
-            origin: {
-                lat: originCoord.lat,
-                lng: originCoord.lng
-            },
-            destination: {
-                lat: destCoord.lat,
-                lng: destCoord.lng
-            },
-            height: truckProfile.height,
-            width: truckProfile.width,
-            weightKg: truckProfile.weightKg,
-            loadType: truckProfile.loadType
-
+            origin: { lat: originCoord.lat, lng: originCoord.lng },
+            destination: { lat: destCoord.lat, lng: destCoord.lng },
+            height: truckProfile.height, width: truckProfile.width,
+            weightKg: truckProfile.weightKg, loadType: truckProfile.loadType
         })
-
     }
     );
-
     const data = await response.json();
-
     if (!response.ok) {
-
         console.error("[Truck Route API Error]", data);
-
         throw new Error(data.message || "Truck route API request failed");
-
     }
-
     if (!data.success || !data.path || data.path.length === 0) {
-
         return null;
-
     }
-
     // Backend 回傳：
     // [ { lat, lng }, { lat, lng } ]
     // 轉成 Google Maps LatLng
-
-    const path = data.path.map(point => new google.maps.LatLng(
-        point.lat, point.lng
-    )
-    );
-
-
+    const path = data.path.map(point => new google.maps.LatLng(point.lat, point.lng));
     fitMapToPath(path);
-
     console.log(`[Truck Route] ${path.length} 個道路點`);
-
     return path;
-
 }
-
 // 地址 → 座標
 // 使用 Google Geocoder
-
 function geocodeAddress(address) {
-
     const geocoder = new google.maps.Geocoder();
-
     return new Promise((resolve, reject) => {
-
         geocoder.geocode(
-            { address },
-            (results, status) => {
+            { address }, (results, status) => {
                 if (status === "OK" && results?.[0]) {
-
                     resolve({
                         lat: results[0].geometry.location.lat(),
                         lng: results[0].geometry.location.lng()
-
                     });
-
                 }
-
                 else {
-
                     reject(new Error(`Geocoding failed: ${status}`));
-
                 }
-
             }
         );
-
     }
     );
-
 }
 
+// ========================================
+// 載入已保存 Mission Route
+// ========================================
+
+async function loadMissionRoute() {
+    if (!currentMission) {
+        console.log("[Route] 目前沒有選擇 Mission，跳過 Route 載入。");
+        return;
+    }
+    const routeButton = document.getElementById("routeBtn");
+
+    if (routeButton) {
+        if (currentMission.status === "READY") {
+            routeButton.style.display = "none";
+            console.log("[Route] Mission 已 READY，隱藏規劃路線按鈕。");
+        } else {
+            routeButton.style.display = "inline-block";
+        }
+    }
+    try {
+        const response = await getMissionRoute(currentMission.id);
+        const route = response?.data;
+        if (!route || !route.geometry || route.geometry.length === 0) {
+            console.log("[Route] 此 Mission 尚未保存路線。");
+
+            if (currentMission?.status === "READY") {
+                hideRouteEditorButtons();
+
+                const resetButton = document.getElementById("resetRouteBtn");
+                if (resetButton) {
+                    resetButton.style.display = "none";
+                }
+
+                console.log("[Route] Mission 已 READY，且尚未保存路線，路線操作功能已鎖定。");
+            }
+
+            return;
+        }
+        console.log("[Route] 載入已保存路線:", route);
+        const savedPath = route.geometry.map(point => new google.maps.LatLng(Number(point.lat), Number(point.lng)));
+        // 恢復起點 / 終點
+        const startInput = document.getElementById("startInput");
+        const endInput = document.getElementById("endInput");
+        if (startInput) {
+            startInput.value = route.start_name || "";
+        }
+        if (endInput) {
+            endInput.value = route.end_name || "";
+        }
+        // 恢復起點 / 終點座標
+        if (route.start_latitude != null && route.start_longitude != null) {
+            currentRouteStartCoord = {
+                lat: Number(route.start_latitude),
+                lng: Number(route.start_longitude)
+            };
+        }
+        if (route.end_latitude != null && route.end_longitude != null) {
+            currentRouteEndCoord = {
+                lat: Number(route.end_latitude),
+                lng: Number(route.end_longitude)
+            };
+        }
+        // 恢復保存時的 Truck Profile
+        if (route.vehicle_height != null && route.vehicle_width != null && route.vehicle_weight != null) {
+            originalTruckProfile = {
+                height: Number(route.vehicle_height), width: Number(route.vehicle_width),
+                weightKg: Number(route.vehicle_weight), loadType: route.vehicle_load_type || ""
+            };
+            console.log("[Route] 已恢復保存時 Truck Profile:", originalTruckProfile);
+        }
+        // 保存目前路線
+        currentRoutePath = savedPath.map(point => new google.maps.LatLng(point.lat(), point.lng()));
+        // 保存原始路線
+        originalRoutePath = savedPath.map(point => new google.maps.LatLng(point.lat(), point.lng()));
+        // 繪製路線
+        drawRoutePolyline(currentRoutePath);
+        // ========================================
+        // 恢復路線模式 CCTV
+        // ========================================
+
+        try {
+            console.log("[Route] 重新查詢保存路線沿線 CCTV...");
+            const result = await fetchRouteCameras(currentRoutePath);
+            if (result && Array.isArray(result.cameras)) {
+                renderRouteMarkers(result.cameras);
+                console.log(`[Route] 保存路線 CCTV：${result.cameras.length} 支`);
+            }
+        } catch (error) {
+            console.error("[Route] 載入保存路線 CCTV 失敗:", error);
+        }
+        // 大貨車建立編輯控制點
+        const mainVehicle = getMainMissionVehicle();
+        if (mainVehicle && mainVehicle.vehicle_type === "MILITARY_MEDIUM_TRUCK") {
+            routeEditPath = simplifyRoutePath(currentRoutePath, 20);
+        }
+        // 顯示路線操作按鈕
+        if (currentMission?.status === "READY") {
+
+            hideRouteEditorButtons();
+
+            console.log(
+                "[Route] Mission 已 READY，保存路線僅供查看，所有路線操作已鎖定。"
+            );
+
+        } else {
+
+            showRouteEditButtons();
+
+            const resetButton =
+                document.getElementById("resetRouteBtn");
+
+            if (resetButton) {
+                resetButton.style.display = "inline-block";
+            }
+
+        }
+    } catch (error) {
+        // 404 = 此 Mission 尚未建立 Route
+        if (error.message.includes("not found")) {
+            console.log("[Route] 此 Mission 尚未建立保存路線。");
+            return;
+        }
+        console.error("[Route] 載入已保存路線失敗:", error);
+    }
+}
 // 繪製路線
 // 注意：
 // 不再使用 Polyline editable / draggable
@@ -346,69 +337,36 @@ function geocodeAddress(address) {
 // 移動線段，不會重新貼道路。
 // 現在改成：
 // 控制點 → Backend → Azure Maps
-
 function drawRoutePolyline(path) {
-
     clearRouteEditMarkers();
-
     if (currentRoutePolyline) {
-
         currentRoutePolyline.setMap(null);
-
         currentRoutePolyline = null;
-
     }
-
     currentRoutePolyline = new google.maps.Polyline({
-
-        path,
-        geodesic: true,
-        strokeColor: "#4285F4",
-        strokeOpacity: 0.85,
-        strokeWeight: 6,
-        editable: false,
-        draggable: false,
-        map
-
+        path, geodesic: true, strokeColor: "#4285F4", strokeOpacity: 0.85,
+        strokeWeight: 6, editable: false, draggable: false, map
     });
-
     // 保存目前道路
-
     routeEditPath = simplifyRoutePath(path, 20);
-
     console.log(`[Route] 道路點：${path.length}`);
-
 }
-
 // 路線簡化
-// Azure Maps 回傳可能有很多點。
+// // Azure Maps 回傳可能有很多點。
 // 不需要每個道路點都做成控制點。
-// 控制點仍然位於原本道路上。=
-
+// 控制點仍然位於原本道路上。
 function simplifyRoutePath(path, maxPoints = 20) {
-
     if (!path || path.length <= maxPoints) {
-
         return [...path];
-
     }
-
     const result = [];
-
     const step = (path.length - 1) / (maxPoints - 1);
-
     for (let i = 0; i < maxPoints; i++) {
-
         const index = Math.round(i * step);
-
         result.push(path[index]);
-
     }
-
     return result;
-
 }
-
 // 建立 Route Editor 控制點
 // 注意：
 // 不使用 CCTV 的 Marker 圖示。
@@ -416,83 +374,43 @@ function simplifyRoutePath(path, maxPoints = 20) {
 // 讓使用者可以清楚知道：
 // 這是「路線控制點」
 // 不是監視器。
-
 function createRouteEditMarkers() {
-
     clearRouteEditMarkers();
-
     if (!currentRoutePolyline || !routeEditPath || routeEditPath.length < 3) {
-
         return;
-
     }
-
     // 只建立中間控制點
     // 起點 / 終點不讓使用者拖曳
-
     for (let i = 1; i < routeEditPath.length - 1; i++) {
-
         const markerElement = document.createElement("div");
-
         markerElement.className = "route-control-marker";
-
         markerElement.innerHTML = `            <div class="route-control-dot"></div>            `;
-
         const marker = new google.maps.marker.AdvancedMarkerElement({
-
-            map,
-            position: routeEditPath[i],
-            content: markerElement,
-            gmpDraggable: true,
-            title: `路線控制點 ${i}`
-
+            map, position: routeEditPath[i], content: markerElement,
+            gmpDraggable: true, title: `路線控制點 ${i}`
         });
-
         marker.routeIndex = i;
-
         // 拖曳中
-
         marker.addListener("drag", () => {
-
             updateRouteEditPoint(marker);
-
         }
         );
-
         // 拖曳完成
-
         marker.addListener("dragend", async () => {
-
             await onRouteEditFinished(marker);
-
         }
         );
-
         routeEditMarkers.push(marker);
-
     }
-
     console.log(`[Route Editor] 建立 ${routeEditMarkers.length} 個控制點`);
-
 }
-
 // 更新控制點位置
-
 function updateRouteEditPoint(marker) {
-
     const index = marker.routeIndex;
-
     if (marker.position) {
-
-        routeEditPath[index] = new google.maps.LatLng(
-            marker.position.lat,
-            marker.position.lng
-        );
-
+        routeEditPath[index] = new google.maps.LatLng(marker.position.lat, marker.position.lng);
     }
-
 }
-
 // 控制點拖曳完成
 // 重點：
 // 不直接把線拉過去。
@@ -506,357 +424,339 @@ function updateRouteEditPoint(marker) {
 // 每段重新貼道路
 // ↓
 // 回傳新的完整道路
-
 async function onRouteEditFinished(marker) {
-
-    if (!originalTruckProfile) {
-
-        console.warn("[Route Editor] 找不到車輛規格");
-
+    if (currentMission?.status === "READY") {
+        alert("任務已進入待執行階段，路線已固定，無法編輯。");
         return;
-
     }
-
-
+    if (!originalTruckProfile) {
+        console.warn("[Route Editor] 找不到車輛規格");
+        return;
+    }
     console.log("[Route Editor] 控制點移動完成，重新計算道路...");
-
     // 取得目前所有控制點
-
     const controlPoints = routeEditPath.map(point => ({
-
         lat: typeof point.lat === "function" ? point.lat() : point.lat,
         lng: typeof point.lng === "function" ? point.lng() : point.lng
-
     })
     );
     const previousPath = currentRoutePath.map(point => ({
-
         lat: typeof point.lat === "function" ? point.lat() : point.lat,
         lng: typeof point.lng === "function" ? point.lng() : point.lng
-
     })
     );
     const editedIndex = marker.routeIndex;
-
     try {
-
         const response = await fetch(`${CONFIG.API_BASE_URL}/api/routes/truck/edit`, {
-
             method: "POST",
-            headers: {
-
-                "Content-Type": "application/json"
-
-            },
-
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-
-                controlPoints,
-                previousPath,
+                controlPoints, previousPath,
                 editedIndex,
                 height: originalTruckProfile.height,
                 width: originalTruckProfile.width,
                 weightKg: originalTruckProfile.weightKg,
                 loadType: originalTruckProfile.loadType
-
             })
-
         }
         );
-
         const data = await response.json();
-
         if (!response.ok) {
-
             console.error("[Edited Truck Route API Error]", data);
-
             throw new Error(data.message || "Edited truck route failed");
-
         }
-
         if (!data.success || !data.path || data.path.length === 0) {
-
             throw new Error("No edited truck route returned");
-
         }
-
         // Azure Maps 新道路
-
         const newPath = data.path.map(point => new google.maps.LatLng(point.lat, point.lng));
-
         currentRoutePath = newPath.map(point => new google.maps.LatLng(point.lat(), point.lng()));
-
         currentRoutePolyline.setPath(newPath);
-
         console.log(`[Route Editor] 新道路 ${newPath.length} 個點`);
-
         // 注意：不要用 newPath 覆蓋原始控制點基準。
         // routeEditPath 保留目前的編輯控制點。
-
         // 重建控制點
-
         createRouteEditMarkers();
-
         // 重新查詢沿線 CCTV
-
         const result = await fetchRouteCameras(newPath);
-
         renderRouteMarkers(result.cameras);
-
         console.log("[Route Editor] 道路重新計算完成");
-
     }
-
     catch (error) {
-
         console.error("[Route Editor]", error);
-
         window.alert("路線重新計算失敗，請確認控制點位置及 Azure Maps API 狀態。");
-
     }
-
 }
-
 // 開啟 / 關閉路線編輯
-
 function setRouteEditMode(enabled) {
 
-    isRouteEditable = enabled;
-
-    if (!enabled) {
-
+    if (currentMission?.status === "READY") {
+        alert("任務已進入待執行階段，路線已固定，無法編輯。");
+        isRouteEditable = false;
         clearRouteEditMarkers();
-
         return;
-
     }
 
-
+    isRouteEditable = enabled;
+    if (!enabled) {
+        clearRouteEditMarkers();
+        return;
+    }
     if (!currentRoutePolyline) {
-
         return;
-
     }
-
     // 沒有車輛資料
     // 代表不是大貨車
-
     if (!originalTruckProfile) {
-
         console.warn("[Route Editor] 目前沒有 Truck Profile");
-
         return;
-
     }
-
     createRouteEditMarkers();
-
 }
-
-
 // 清除控制點
-
 function clearRouteEditMarkers() {
-
     routeEditMarkers.forEach(marker => {
-
         marker.map = null;
-
     }
     );
-
     routeEditMarkers = [];
-
 }
-
 // 清除目前路線
-
 function clearCurrentRoute() {
-
     clearRouteEditMarkers();
-
-
     if (currentRoutePolyline) {
-
         currentRoutePolyline.setMap(null);
-
         currentRoutePolyline = null;
-
     }
-
     routeEditPath = [];
-
     originalRoutePath = [];
-
 }
-
-// 將地圖縮放到整條路線
-
-function fitMapToPath(path) {
-
-    if (!path || path.length === 0) {
-
-        return;
-
+// ========================================
+// 切換 Mission 時清除舊 Route 狀態
+// ========================================
+function clearMissionRouteState() {
+    console.log("[Route] 切換 Mission，清除上一個 Mission 的路線狀態");
+    // 清除路線編輯控制點
+    clearRouteEditMarkers();
+    // 清除路線
+    if (currentRoutePolyline) {
+        currentRoutePolyline.setMap(null);
+        currentRoutePolyline = null;
     }
-
-
-    const bounds = new google.maps.LatLngBounds();
-
-
-    path.forEach(point => bounds.extend(point));
-
-
-    map.fitBounds(bounds);
-
+    // 清除 Route 狀態
+    routeEditPath = [];
+    originalRoutePath = [];
+    currentRoutePath = [];
+    currentRouteStartCoord = null;
+    currentRouteEndCoord = null;
+    originalTruckProfile = null;
+    // ========================================
+    // 清除起點 / 終點輸入框
+    // ========================================
+    const startInput = document.getElementById("startInput");
+    const endInput = document.getElementById("endInput");
+    if (startInput) { startInput.value = ""; }
+    if (endInput) { endInput.value = ""; }
+    // 離開 Route Mode
+    isRouteMode = false;
+    // 清除目前路線 CCTV
+    activeCamMarkers.forEach(marker => { marker.map = null; });
+    activeCamMarkers = [];
+    if (markerCluster) { markerCluster.clearMarkers(); }
+    // 隱藏 Route 操作按鈕
+    hideRouteEditorButtons();
 }
-
+// 將地圖縮放到整條路線
+function fitMapToPath(path) {
+    if (!path || path.length === 0) {
+        return;
+    }
+    const bounds = new google.maps.LatLngBounds();
+    path.forEach(point => bounds.extend(point));
+    map.fitBounds(bounds);
+}
 // 重置地圖
-
 // Route Editor：重設為原始路線
-
 // Route Editor：重設為原始路線
-
 async function resetRouteToOriginal() {
-
+    if (currentMission?.status === "READY") {
+        alert("任務已進入待執行階段，路線已固定，無法重設。");
+        return;
+    }
     if (!originalRoutePath || originalRoutePath.length === 0) {
-
         console.warn("[Route Editor] 沒有可重設的原始路線");
         return;
-
     }
-
     console.log("[Route Editor] 重設為原始路線");
-
     try {
-
         // 1. 離開目前編輯模式
         isRouteEditable = false;
-
         // 2. 清除目前控制點
         clearRouteEditMarkers();
-
         // 3. 複製原始路線成目前路線
         currentRoutePath = originalRoutePath.map(point => new google.maps.LatLng(point.lat(), point.lng()));
-
         // 4. 恢復 Polyline
         if (currentRoutePolyline) {
-
             currentRoutePolyline.setPath(currentRoutePath);
-
         }
         else {
-
             drawRoutePolyline(currentRoutePath);
-
         }
-
         // 5. 重建控制點基準
         routeEditPath = simplifyRoutePath(currentRoutePath, 20);
-
         // 6. 更新 CCTV
         console.log("[Route Editor] 重新查詢原始路線 CCTV...");
-
         const result = await fetchRouteCameras(currentRoutePath);
-
         if (result && Array.isArray(result.cameras)) {
-
             renderRouteMarkers(result.cameras);
-
             console.log(`[Route Editor] 原始路線 CCTV：${result.cameras.length} 支`);
-
         }
-
         // 7. UI 狀態
-
         const editButton = document.getElementById("editRouteBtn");
-
         if (editButton) { editButton.style.display = "inline-block"; }
-
         console.log("[Route Editor] 已恢復原始路線");
-
     }
     catch (error) {
-
         console.error("[Route Editor] 重設原始路線失敗", error);
-
         window.alert("重設路線失敗，請查看瀏覽器主控台。");
-
     }
 }
-
 async function resetMapToAllCameras() {
-
     console.log("取消導航");
-
     isRouteMode = false;
-
     originalTruckProfile = null;
-
     clearCurrentRoute();
-
     // 移除目前路線 CCTV
-
     activeCamMarkers.forEach(marker => { marker.map = null; });
-
     activeCamMarkers = [];
-
     if (markerCluster) {
-
         markerCluster.clearMarkers();
-
     }
-
     // 重新抓取目前畫面的 CCTV
-
     await fetchCameraData();
-
     document.getElementById("clearRouteBtn").style.display = "none";
-
     hideRouteEditButtons();
-
 }
-
 // 路線編輯按鈕
-
 document.getElementById("editRouteBtn")?.addEventListener("click", () => {
-
     if (!currentRoutePolyline) {
-
         return;
-
     }
-
     isRouteEditable = !isRouteEditable;
-
     setRouteEditMode(isRouteEditable);
-
     console.log(isRouteEditable ? "[Route Editor] 開啟路線編輯" : "[Route Editor] 關閉路線編輯");
-
 }
 );
+// 路線確認按鈕
+document.getElementById("confirmRouteBtn")?.addEventListener("click", async () => {
+    if (!currentMission) {
+        alert("目前沒有選擇任務。");
+        return;
+    }
+    if (!currentRoutePath || currentRoutePath.length === 0) {
+        alert("目前沒有可確認的路線。");
+        return;
+    }
+    const mainVehicle = getMainMissionVehicle();
+    if (!mainVehicle) {
+        alert("找不到主車資料，無法保存路線。");
+        return;
+    }
+    if (!currentRouteStartCoord || !currentRouteEndCoord) {
+        alert("缺少起點或終點座標，請重新規劃路線。");
+        return;
+    }
+    const geometry = currentRoutePath.map(point => ({
+        lat: typeof point.lat === "function" ? point.lat() : point.lat,
+        lng: typeof point.lng === "function" ? point.lng() : point.lng
+    }));
+    // 建立完整 Mission Route Snapshot
+    const routeData = {
+        startName: document.getElementById("startInput")?.value || "",
+        startLatitude: currentRouteStartCoord.lat,
+        startLongitude: currentRouteStartCoord.lng,
+        endName: document.getElementById("endInput")?.value || "",
+        endLatitude: currentRouteEndCoord.lat,
+        endLongitude: currentRouteEndCoord.lng,
+        vehicleType: mainVehicle.vehicle_type,
+        vehicleHeight: mainVehicle.vehicle_height,
+        vehicleWidth: mainVehicle.vehicle_width,
+        vehicleWeight: mainVehicle.vehicle_weight,
+        vehicleLoadType: mainVehicle.vehicle_load_type || "",
+        geometry,
+        confirmed: true
+    };
+    console.log("[Route] 正在確認路線...");
+    console.log("[Route] 路線點數:", geometry.length);
+    console.log("[Route] Route Snapshot:", routeData);
+    try {
+        // 先確認目前 Mission 是否已經有 Route
+        let existingRoute = null;
+        try {
+            const routeResponse = await getMissionRoute(currentMission.id);
+            existingRoute = routeResponse?.data || null;
+        } catch (error) {
+            // 404 = 尚未建立 Route
+            if (!error.message.includes("not found")) {
+                throw error;
+            }
+        }
+        let response;
+        // ========================================
+        // 第一次確認：建立 Route
+        // ========================================
+        if (!existingRoute) {
+            console.log("[Route] 尚未建立 Mission Route，正在建立...");
+            response = await createMissionRoute(currentMission.id, routeData);
+        }
+        // ========================================
+        // 已存在：更新 Route
+        // ========================================
+        else {
+            console.log("[Route] Mission Route 已存在，正在更新...");
+            response = await updateMissionRoute(currentMission.id, routeData);
+        }
+        console.log("[Route] 路線確認成功:", response);
 
+        if (typeof loadPlanningConfirmation === "function") {
+            await loadPlanningConfirmation();
+        }
+
+        alert("路線已確認。");
+    } catch (error) {
+        console.error("[Route] 路線確認失敗:", error);
+        alert(`路線確認失敗：${error.message}`);
+    }
+});
 function hideRouteEditorButtons() {
-
     const editButton = document.getElementById("editRouteBtn");
-
     if (editButton) {
-
         editButton.style.display = "none";
-
     }
 
-
+    const confirmButton = document.getElementById("confirmRouteBtn");
     if (confirmButton) {
-
         confirmButton.style.display = "none";
-
     }
 
+    const resetButton = document.getElementById("resetRouteBtn");
+    if (resetButton) {
+        resetButton.style.display = "none";
+    }
+
+    const clearButton = document.getElementById("clearRouteBtn");
+    if (clearButton) {
+        clearButton.style.display = "none";
+    }
 }
-
+document.getElementById("route-next-btn")?.addEventListener("click", () => {
+    if (!currentRoutePath || currentRoutePath.length === 0) {
+        alert("請先完成路線規劃，再進入監控設定。");
+        return;
+    }
+    switchWorkspace("monitoring");
+});
 // 暴露給 map-core.js
-
 window.calculateAndDisplayRoute = calculateAndDisplayRoute;
 window.resetMapToAllCameras = resetMapToAllCameras;
 window.resetRouteToOriginal = resetRouteToOriginal;

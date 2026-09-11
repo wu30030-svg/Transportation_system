@@ -1,4 +1,4 @@
-const pool = require("../../../config/db");
+﻿const pool = require("../../../config/db");
 
 
 // ========================================
@@ -103,6 +103,34 @@ async function updatePersonnel(
 
 
 // ========================================
+// Bind Personnel To User
+// ========================================
+
+async function bindPersonnelUser(
+    personnelId,
+    userId
+) {
+    const query = `
+        UPDATE personnel
+        SET
+            user_id = $1,
+            updated_at = NOW()
+        WHERE id = $2
+        RETURNING *;
+    `;
+
+    const values = [
+        userId,
+        personnelId
+    ];
+
+    const result = await pool.query(query, values);
+
+    return result.rows[0] || null;
+}
+
+
+// ========================================
 // Delete Personnel
 // ========================================
 
@@ -124,5 +152,6 @@ module.exports = {
     findPersonnelById,
     findAllPersonnel,
     updatePersonnel,
+    bindPersonnelUser,
     deletePersonnel
 };

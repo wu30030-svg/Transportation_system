@@ -207,6 +207,69 @@ async function updateMission(id, data) {
 }
 
 // ========================================
+// Validate Mission Planning
+// ========================================
+
+async function validateMissionPlanning(missionId) {
+
+    const mission =
+        await missionRepository.findMissionById(missionId);
+
+    if (!mission) {
+        const error = new Error("Mission not found");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    // 1. 任務名稱
+    if (
+        !mission.mission_name ||
+        mission.mission_name.trim() === ""
+    ) {
+        const error =
+            new Error("Mission name is required");
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    // 2. 任務說明
+    if (
+        !mission.description ||
+        mission.description.trim() === ""
+    ) {
+        const error =
+            new Error("Mission description is required");
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    // 3. 任務目的
+    if (
+        !mission.purpose ||
+        mission.purpose.trim() === ""
+    ) {
+        const error =
+            new Error("Mission purpose is required");
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    // 4. 任務開始時間
+    if (!mission.start_time) {
+        const error =
+            new Error("Mission start time is required");
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    return true;
+}
+
+// ========================================
 // Validate Mission Ready
 // ========================================
 
@@ -268,22 +331,28 @@ async function validateMissionReady(missionId) {
     }
 
     // 5. Main Vehicle
-    const mainAssignment =
-        await missionVehicleAssignmentRepository
-            .findMainAssignment(missionId);
+    const mainAssignments =
+        assignments.filter(
+            assignment => assignment.is_main_vehicle === true
+        );
 
-    if (!mainAssignment) {
+    if (mainAssignments.length !== 1) {
         const error =
-            new Error("Main vehicle is required");
+            new Error("Exactly one main vehicle is required");
 
         error.statusCode = 400;
         throw error;
     }
 
+    const mainAssignment = mainAssignments[0];
+
     // 6. Driver
-    if (!mainAssignment.driver_id) {
+    const assignmentWithoutDriver =
+        assignments.find(assignment => !assignment.driver_id);
+
+    if (assignmentWithoutDriver) {
         const error =
-            new Error("Main vehicle driver is required");
+            new Error("Every mission vehicle must have a driver");
 
         error.statusCode = 400;
         throw error;
@@ -318,6 +387,10 @@ async function updateMissionStatus(id, newStatus) {
 
         error.statusCode = 400;
         throw error;
+    }
+
+    if (newStatus === MISSION_STATUS.PLANNED) {
+        await validateMissionPlanning(id);
     }
 
     if (newStatus === MISSION_STATUS.READY) {
@@ -360,5 +433,6 @@ module.exports = {
     getAllMissions,
     updateMission,
     updateMissionStatus,
+    validateMissionPlanning,
     validateMissionReady
 };

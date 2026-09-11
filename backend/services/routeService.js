@@ -53,7 +53,17 @@ async function calculateTruckRoute({ origin, destination, height, width, weightK
         `&vehicleWidth=${encodeURIComponent(width)}` +
         `&vehicleWeight=${encodeURIComponent(weightKg)}`;
 
-    if (loadType) {
+    const AZURE_VEHICLE_LOAD_TYPES = new Set([
+        "USHazmatClass1", "USHazmatClass2", "USHazmatClass3", "USHazmatClass4",
+        "USHazmatClass5", "USHazmatClass6", "USHazmatClass7", "USHazmatClass8",
+        "USHazmatClass9", "otherHazmatExplosive", "otherHazmatGeneral", "otherHazmatHarmfulToWater"
+    ]);
+    console.log("[Azure Maps] loadType received:", loadType);
+    console.log("[Azure Maps] sending vehicleLoadType:", AZURE_VEHICLE_LOAD_TYPES.has(loadType) ? loadType : "(omitted)");
+    console.log("[Azure Maps] vehicleLoadType parameter:",
+        AZURE_VEHICLE_LOAD_TYPES.has(loadType) ? loadType : "(omitted)"
+    );
+    if (AZURE_VEHICLE_LOAD_TYPES.has(loadType)) {
         url += `&vehicleLoadType=${encodeURIComponent(loadType)}`;
     }
 

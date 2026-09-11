@@ -21,444 +21,880 @@
 <body>
 
     <!-- ========================================
+     Login Screen
+======================================== -->
+
+    <div id="login-screen" class="login-screen">
+
+        <div class="login-panel">
+
+            <div class="login-brand">
+
+                <div class="system-mark">
+                    MC
+                </div>
+
+                <div>
+                    <h1>任務指揮中心</h1>
+                    <p>運輸戰略中心</p>
+                </div>
+
+            </div>
+
+
+            <div class="login-header">
+
+                <span class="eyebrow">
+                    MISSION CENTER
+                </span>
+
+                <h2>
+                    系統登入
+                </h2>
+
+                <p>
+                    請使用您的帳號登入任務指揮中心。
+                </p>
+
+            </div>
+
+
+            <form id="login-form">
+
+                <div class="form-group">
+
+                    <label for="login-username">
+                        帳號
+                    </label>
+
+                    <input type="text" id="login-username" autocomplete="username" placeholder="輸入帳號" required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="login-password">
+                        密碼
+                    </label>
+
+                    <input type="password" id="login-password" autocomplete="current-password" placeholder="輸入密碼"
+                        required>
+
+                </div>
+
+
+                <div id="login-error" class="login-error" style="display:none;">
+                </div>
+
+
+                <button id="login-submit-btn" class="primary-button" type="submit">
+                    登入系統
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <div id="mission-center-app" class="mission-center-app">
+
+        <!-- ========================================
          Mission Center Header
     ========================================= -->
 
-    <header class="command-header">
+        <header class="command-header">
 
-        <div class="system-title">
+            <div class="system-title">
 
-            <div class="system-mark">MC</div>
+                <div class="system-mark">MC</div>
 
-            <div>
-                <h1>任務指揮中心</h1>
-                <p>運輸戰略中心</p>
+                <div>
+                    <h1>任務指揮中心</h1>
+                    <p>運輸戰略中心</p>
+                </div>
+
             </div>
 
-        </div>
+
+            <div class="system-status">
+
+                <span class="status-item">
+                    <span class="status-dot online"></span>
+                    系統正常
+                </span>
+
+                <span class="status-item">
+                    <span class="status-dot offline"></span>
+                    GPS 離線
+                </span>
+
+                <span class="status-item">
+                    <span class="status-dot online"></span>
+                    監視系統正常
+                </span>
+
+                <div class="user-session">
+
+                    <span id="current-user-name" class="current-user-name">
+                        未登入
+                    </span>
+
+                    <button id="logout-btn" class="logout-button" type="button">
+                        登出
+                    </button>
+
+                </div>
+
+            </div>
+
+        </header>
 
 
-        <div class="system-status">
-
-            <span class="status-item"> <span class="status-dot online"></span> 系統正常 </span>
-            <span class="status-item"> <span class="status-dot offline"></span> GPS 離線 </span>
-            <span class="status-item"> <span class="status-dot online"></span> 監視系統正常 </span>
-
-        </div>
-
-    </header>
-
-
-    <!-- ========================================
+        <!-- ========================================
          Mission Center Layout
     ========================================= -->
 
-    <main class="mission-center">
+        <main class="mission-center">
 
-        <!-- ====================================
+            <!-- ====================================
              Left Sidebar
         ===================================== -->
 
-        <aside class="mission-sidebar">
+            <aside class="mission-sidebar">
 
-            <div class="sidebar-header">
+                <div class="sidebar-header">
 
-                <div>
-                    <span class="eyebrow">任務中心</span>
-                    <h2>任務</h2>
+                    <div>
+                        <span class="eyebrow">任務中心</span>
+                        <h2>任務</h2>
+                    </div>
+
+                    <button id="createMissionBtn" class="icon-button" type="button" title="建立任務"> + </button>
+
                 </div>
 
-                <button id="createMissionBtn" class="icon-button" type="button" title="建立任務"> + </button>
 
-            </div>
+                <div class="mission-list-header">
 
+                    <span>任務清單</span>
 
-            <div class="mission-list-header">
+                    <button id="refreshMissionsBtn" class="text-button" type="button"> 重新整理 </button>
 
-                <span>任務清單</span>
-
-                <button id="refreshMissionsBtn" class="text-button" type="button"> 重新整理 </button>
-
-            </div>
+                </div>
 
 
-            <div id="mission-list" class="mission-list">
+                <div id="mission-list" class="mission-list">
 
-                <div class="mission-list-empty"> 載入任務中... </div>
+                    <div class="mission-list-empty"> 載入任務中... </div>
 
-            </div>
+                </div>
 
-        </aside>
+            </aside>
 
 
-        <!-- ====================================
+            <!-- ====================================
              Main Workspace
         ===================================== -->
 
-        <section class="mission-workspace">
+            <section class="mission-workspace">
 
-            <div class="workspace-header">
+                <div class="workspace-header">
 
-                <div>
+                    <div>
 
-                    <span class="eyebrow"> 目前工作區 </span>
+                        <span class="eyebrow"> 目前工作區 </span>
 
-                    <h2 id="workspace-title"> 任務總覽 </h2>
+                        <h2 id="workspace-title"> 任務總覽 </h2>
+
+                    </div>
+
+                    <div id="selected-mission-code" class="data-code"> 未選擇任務 </div>
 
                 </div>
 
-                <div id="selected-mission-code" class="data-code"> 未選擇任務 </div>
 
-            </div>
-
-
-            <!-- =================================
+                <!-- =================================
                  Workspace Navigation
             ================================== -->
 
-            <nav class="workspace-tabs">
+                <nav class="workspace-tabs">
 
-                <button class="workspace-tab active" data-workspace="overview"> 01　總覽 </button>
-                <button class="workspace-tab" data-workspace="vehicles"> 02　車輛 </button>
-                <button class="workspace-tab" data-workspace="route"> 03　路線 </button>
-                <button class="workspace-tab" data-workspace="monitoring"> 04　監控 </button>
-                <!--        Execution / Report 共用同一個位置。 由 Mission Status 決定顯示哪一個。    -->
-                <button id="execution-tab" class="workspace-tab" data-workspace="execution"> 05　執行 </button>
-                <button id="report-tab" class="workspace-tab hidden" data-workspace="report"> 05　報告 </button>
-
-
-            </nav>
+                    <button class="workspace-tab active" data-workspace="overview"> 01　總覽 </button>
+                    <button class="workspace-tab" data-workspace="vehicles"> 02　車輛 </button>
+                    <button class="workspace-tab" data-workspace="route"> 03　路線 </button>
+                    <button class="workspace-tab" data-workspace="monitoring"> 04　監控 </button>
+                    <!--        Execution / Report 共用同一個位置。 由 Mission Status 決定顯示哪一個。    -->
+                    <button id="execution-tab" class="workspace-tab" data-workspace="execution"> 05　執行 </button>
+                    <button id="report-tab" class="workspace-tab hidden" data-workspace="report"> 05　報告 </button>
 
 
-            <!-- =================================
+                </nav>
+
+
+                <!-- =================================
                  Mission Overview
             ================================== -->
 
-            <section id="workspace-overview" class="workspace-panel active">
+                <section id="workspace-overview" class="workspace-panel active">
 
-                <div id="mission-empty-state" class="empty-state">
+                    <div id="mission-empty-state" class="empty-state">
 
-                    <div class="empty-state-icon"> M </div>
+                        <div class="empty-state-icon"> M </div>
 
-                    <h3>尚未選擇任務</h3>
+                        <h3>尚未選擇任務</h3>
 
-                    <p>
-                        請從左側任務清單選擇任務，
-                        以開始查看與規劃任務。
-                    </p>
+                        <p>
+                            請從左側任務清單選擇任務，
+                            以開始查看與規劃任務。
+                        </p>
 
-                </div>
+                    </div>
 
 
-                <div id="mission-overview-content" class="mission-overview-content hidden">
+                    <div id="mission-overview-content" class="mission-overview-content hidden">
 
-                    <!-- Mission Brief -->
+                        <!-- Mission Brief -->
 
-                    <section class="mission-brief card">
+                        <section class="mission-brief card">
 
-                        <div class="card-header">
+                            <div class="card-header">
 
-                            <div>
-                                <span class="eyebrow"> 任務摘要 </span>
-                                <h3 id="mission-name"> - </h3>
+                                <div>
+                                    <span class="eyebrow"> 任務摘要 </span>
+                                    <h3 id="mission-name"> - </h3>
+                                </div>
+
+                                <div class="mission-brief-actions">
+
+                                    <span id="mission-status-badge" class="status-badge">
+                                        -
+                                    </span>
+
+                                </div>
+
                             </div>
 
-                            <span id="mission-status-badge" class="status-badge"> - </span>
+
+                            <div class="mission-description">
+
+                                <div class="info-block">
+
+                                    <span class="info-label"> 任務說明 </span>
+
+                                    <div id="mission-description"> - </div>
+
+                                </div>
+
+
+                                <div class="info-block">
+
+                                    <span class="info-label"> 任務目的 </span>
+
+                                    <div id="mission-purpose"> - </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- ========================================
+                        Mission Actions
+                        ======================================== -->
+
+                            <div class="mission-actions">
+
+                                <div class="mission-actions-header">
+
+                                    <span class="eyebrow"> 任務操作 </span>
+
+                                </div>
+
+                                <div class="mission-actions-buttons">
+
+                                    <button id="editMissionBtn" class="secondary-button" type="button">
+
+                                        編輯任務
+
+                                    </button>
+
+                                    <button id="startPlanningBtn" class="primary-button" type="button">
+
+                                        開始規劃
+
+                                    </button>
+
+                                    <button id="startExecutionBtn" class="primary-button" type="button"
+                                        style="display:none;">
+
+                                        開始執行
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </section>
+
+                        <!-- Mission Data -->
+
+                        <div class="overview-grid">
+
+                            <section class="data-card card">
+
+                                <span class="data-label"> 任務編號 </span>
+
+                                <strong id="mission-id" class="data-value mono"> -------- </strong>
+
+                            </section>
+
+                            <section class="data-card card">
+
+                                <span class="data-label"> 車輛數量 </span>
+
+                                <strong id="mission-vehicle-count" class="data-value mono"> 00 </strong>
+
+                            </section>
+
+                            <section class="data-card card">
+
+                                <span class="data-label"> 路線狀態 </span>
+
+                                <strong id="mission-route-status" class="data-value"> 尚未規劃 </strong>
+
+                            </section>
+
+                            <section class="data-card card">
+
+                                <span class="data-label"> 預定開始 </span>
+
+                                <strong id="mission-start-time" class="data-value mono"> -------- </strong>
+
+                            </section>
 
                         </div>
 
 
-                        <div class="mission-description">
+                        <!-- Mission Timeline -->
 
-                            <div class="info-block">
+                        <section class="card lifecycle-card">
 
-                                <span class="info-label"> 任務說明 </span>
+                            <div class="card-header">
 
-                                <div id="mission-description"> - </div>
+                                <div>
+                                    <span class="eyebrow"> 任務生命週期 </span>
 
-                            </div>
-
-
-                            <div class="info-block">
-
-                                <span class="info-label"> 任務目的 </span>
-
-                                <div id="mission-purpose"> - </div>
+                                    <h3>任務生命週期</h3>
+                                </div>
 
                             </div>
 
-                        </div>
 
-                    </section>
+                            <div class="lifecycle">
 
-                    <!-- Mission Data -->
+                                <div class="lifecycle-step" data-status="DRAFT">
 
-                    <div class="overview-grid">
+                                    <span class="lifecycle-number"> 01 </span>
 
-                        <section class="data-card card">
+                                    <span> 草稿 </span>
 
-                            <span class="data-label"> 任務編號 </span>
+                                </div>
 
-                            <strong id="mission-id" class="data-value mono"> -------- </strong>
 
-                        </section>
+                                <div class="lifecycle-line">
+                                </div>
 
-                        <section class="data-card card">
+                                <div class="lifecycle-step" data-status="PLANNED">
 
-                            <span class="data-label"> 車輛數量 </span>
+                                    <span class="lifecycle-number"> 02 </span>
+                                    <span> 已規劃 </span>
 
-                            <strong id="mission-vehicle-count" class="data-value mono"> 00 </strong>
+                                </div>
 
-                        </section>
 
-                        <section class="data-card card">
+                                <div class="lifecycle-line">
+                                </div>
 
-                            <span class="data-label"> 路線狀態 </span>
+                                <div class="lifecycle-step" data-status="READY">
 
-                            <strong id="mission-route-status" class="data-value"> 尚未規劃 </strong>
+                                    <span class="lifecycle-number"> 03 </span>
+                                    <span> 待執行 </span>
 
-                        </section>
+                                </div>
 
-                        <section class="data-card card">
+                                <div class="lifecycle-line">
+                                </div>
 
-                            <span class="data-label"> 預定開始 </span>
 
-                            <strong id="mission-start-time" class="data-value mono"> -------- </strong>
+                                <div class="lifecycle-step" data-status="RUNNING">
+
+                                    <span class="lifecycle-number"> 04 </span>
+                                    <span> 執行中 </span>
+
+                                </div>
+
+
+                                <div class="lifecycle-line">
+                                </div>
+
+                                <div class="lifecycle-step" data-status="COMPLETED">
+
+                                    <span class="lifecycle-number"> 05 </span>
+                                    <span> 已完成 </span>
+
+                                </div>
+
+                            </div>
 
                         </section>
 
                     </div>
 
-
-                    <!-- Mission Timeline -->
-
-                    <section class="card lifecycle-card">
-
-                        <div class="card-header">
-
-                            <div>
-                                <span class="eyebrow"> 任務生命週期 </span>
-
-                                <h3>任務生命週期</h3>
-                            </div>
-
-                        </div>
+                </section>
 
 
-                        <div class="lifecycle">
-
-                            <div class="lifecycle-step" data-status="DRAFT">
-
-                                <span class="lifecycle-number"> 01 </span>
-
-                                <span> 草稿 </span>
-
-                            </div>
-
-
-                            <div class="lifecycle-line">
-                            </div>
-
-                            <div class="lifecycle-step" data-status="PLANNED">
-
-                                <span class="lifecycle-number"> 02 </span>
-                                <span> 已規劃 </span>
-
-                            </div>
-
-
-                            <div class="lifecycle-line">
-                            </div>
-
-                            <div class="lifecycle-step" data-status="READY">
-
-                                <span class="lifecycle-number"> 03 </span>
-                                <span> 待執行 </span>
-
-                            </div>
-
-                            <div class="lifecycle-line">
-                            </div>
-
-
-                            <div class="lifecycle-step" data-status="RUNNING">
-
-                                <span class="lifecycle-number"> 04 </span>
-                                <span> 執行中 </span>
-
-                            </div>
-
-
-                            <div class="lifecycle-line">
-                            </div>
-
-                            <div class="lifecycle-step" data-status="COMPLETED">
-
-                                <span class="lifecycle-number"> 05 </span>
-                                <span> 已完成 </span>
-
-                            </div>
-
-                        </div>
-
-                    </section>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================
+                <!-- =================================
                  Route Workspace
             ================================== -->
 
-            <section id="workspace-route" class="workspace-panel">
+                <section id="workspace-route" class="workspace-panel">
 
-                <div class="route-workspace card">
+                    <div class="route-workspace card">
 
-                    <div class="workspace-section-header">
+                        <div class="workspace-section-header">
 
-                        <div>
-                            <span class="eyebrow"> 路線規劃 </span>
-                            <h3>任務路線規劃</h3>
+                            <div>
+                                <span class="eyebrow"> 路線規劃 </span>
+                                <h3>任務路線規劃</h3>
+                            </div>
                         </div>
+
+                        <div class="route-toolbar">
+
+                            <input type="text" id="startInput" placeholder="輸入起點">
+                            <span class="route-arrow"> → </span>
+                            <input type="text" id="endInput" placeholder="輸入終點">
+
+                            <button id="routeBtn"> 規劃路線 </button>
+                            <button id="resetRouteBtn" onclick="resetRouteToOriginal()" style="display:none;"> 重設路線
+                            </button>
+                            <button id="editRouteBtn" style="display:none;"> 編輯路線 </button>
+                            <button id="confirmRouteBtn" style="display:none;"> 確認路線 </button>
+                            <button id="clearRouteBtn" style="display:none;"> 取消導航 </button>
+
+                        </div>
+
+                        <div id="map">
+                        </div>
+                        <div class="planning-actions">
+                            <button id="route-next-btn" class="primary-button" type="button">
+                                下一步：監控 →
+                            </button>
+                        </div>
+
                     </div>
 
-                    <div class="route-toolbar">
-
-                        <input type="text" id="startInput" placeholder="輸入起點">
-                        <span class="route-arrow"> → </span>
-                        <input type="text" id="endInput" placeholder="輸入終點">
-
-                        <button id="routeBtn"> 規劃路線 </button>
-                        <button id="resetRouteBtn" onclick="resetRouteToOriginal()" style="display:none;"> 重設路線
-                        </button>
-                        <button id="editRouteBtn" style="display:none;"> 編輯路線 </button>
-                        <button id="clearRouteBtn" style="display:none;"> 取消導航 </button>
-
-                    </div>
-
-                    <div id="map">
-                    </div>
-
-                </div>
-
-            </section>
+                </section>
 
 
-            <!-- =================================
+                <!-- =================================
      Vehicle Workspace
 ================================== -->
 
-            <section id="workspace-vehicles" class="workspace-panel">
+                <section id="workspace-vehicles" class="workspace-panel">
 
-                <div class="vehicle-workspace">
+                    <div class="vehicle-workspace">
 
-                    <!-- =================================
+                        <!-- =================================
              Vehicle Header
         ================================== -->
 
-                    <div class="workspace-section-header">
+                        <div class="workspace-section-header">
 
-                        <div>
+                            <div>
 
-                            <span class="eyebrow"> 車輛配置 </span>
+                                <span class="eyebrow"> 車輛配置 </span>
 
-                            <h3>任務車輛配置</h3>
+                                <h3>任務車輛配置</h3>
+
+                            </div>
+
+                            <div class="vehicle-header-actions">
+
+                                <button id="add-vehicle-assignment-btn" class="primary-button" type="button">
+                                    ＋ 配置車輛
+                                </button>
+
+                            </div>
 
                         </div>
 
-                        <div class="vehicle-header-actions">
 
-                            <span id="vehicle-config-status" class="data-code">
-                                尚未配置
-                            </span>
+                        <!-- =================================
+             Vehicle Summary
+        ================================== -->
 
-                            <button id="add-vehicle-assignment-btn" class="primary-button" type="button">
-                                ＋ 配置車輛
+                        <div class="vehicle-summary-grid">
+
+                            <section class="data-card card">
+
+                                <span class="data-label">
+                                    任務車輛
+                                </span>
+
+                                <strong id="vehicle-total-count" class="data-value mono">
+                                    00
+                                </strong>
+
+                            </section>
+
+
+                            <section class="data-card card">
+
+                                <span class="data-label">
+                                    主車
+                                </span>
+
+                                <strong id="vehicle-main-status" class="data-value">
+                                    未設定
+                                </strong>
+
+                            </section>
+
+
+                            <section class="data-card card">
+
+                                <span class="data-label">
+                                    駕駛
+                                </span>
+
+                                <strong id="vehicle-driver-count" class="data-value mono">
+                                    00
+                                </strong>
+
+                            </section>
+
+
+                            <section class="data-card card">
+
+                                <span class="data-label">
+                                    車長
+                                </span>
+
+                                <strong id="vehicle-commander-count" class="data-value mono">
+                                    00
+                                </strong>
+
+                            </section>
+
+                        </div>
+
+
+                        <!-- =================================
+                    Vehicle Assignment Area
+                    ================================== -->
+
+                        <section class="vehicle-assignment-section card">
+
+                            <div class="card-header">
+
+                                <div>
+
+                                    <span class="eyebrow">
+                                        編組配置
+                                    </span>
+
+                                    <h3>
+                                        任務車輛
+                                    </h3>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- Empty -->
+
+                            <div id="vehicle-empty-state" class="vehicle-empty-state">
+
+                                <div class="empty-state-icon">
+                                    V
+                                </div>
+
+                                <h3>
+                                    尚未配置車輛
+                                </h3>
+
+                                <p>
+                                    此任務目前尚未配置任何車輛。
+                                </p>
+
+                                <button id="vehicle-empty-add-btn" class="primary-button" type="button">
+                                    ＋ 配置第一輛車
+                                </button>
+
+                            </div>
+
+
+                            <!-- Assignment List -->
+
+                            <div id="vehicle-assignment-list" class="vehicle-assignment-list hidden">
+
+                            </div>
+
+                        </section>
+
+                        <div class="planning-actions">
+                            <button id="vehicles-next-btn" class="primary-button" type="button">
+                                下一步：路線 →
+                            </button>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================
+                 Monitoring Workspace
+            ================================== -->
+
+                <!-- =================================
+     Monitoring Workspace
+================================== -->
+
+                <section id="workspace-monitoring" class="workspace-panel">
+
+                    <div class="monitoring-workspace">
+
+                        <!-- Monitoring Header -->
+
+                        <div class="workspace-section-header">
+
+                            <div>
+
+                                <span class="eyebrow">
+                                    監控設定
+                                </span>
+
+                                <h3>
+                                    任務監控
+                                </h3>
+
+                            </div>
+
+                            <div class="monitoring-header-info">
+
+                                <span>
+                                    已配置
+                                </span>
+
+                                <strong id="monitoring-total-count" class="mono">
+                                    00
+                                </strong>
+
+                                <span>
+                                    支監視器
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Monitoring List -->
+
+                        <section class="monitoring-list-section card">
+
+                            <div class="card-header">
+
+                                <div>
+
+                                    <span class="eyebrow">
+                                        監視群組
+                                    </span>
+
+                                    <h3>
+                                        任務監控清單
+                                    </h3>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- Empty State -->
+
+                            <div id="monitoring-empty-state" class="monitoring-empty-state">
+
+                                <div class="empty-state-icon">
+                                    C
+                                </div>
+
+                                <h3>
+                                    尚未配置監控
+                                </h3>
+
+                                <p>
+                                    請至 03 路線選擇 CCTV 並加入任務監控。
+                                </p>
+
+                            </div>
+
+
+                            <!-- Monitoring List -->
+
+                            <div id="mission-monitoring-list" class="mission-monitoring-list hidden">
+                            </div>
+
+                        </section>
+
+
+                        <!-- Planning Action -->
+
+                        <div class="planning-actions">
+
+                            <button id="monitoring-next-btn" class="primary-button" type="button">
+                                下一步：完成規劃 →
                             </button>
 
                         </div>
 
                     </div>
 
-
-                    <!-- =================================
-             Vehicle Summary
-        ================================== -->
-
-                    <div class="vehicle-summary-grid">
-
-                        <section class="data-card card">
-
-                            <span class="data-label">
-                                任務車輛
-                            </span>
-
-                            <strong id="vehicle-total-count" class="data-value mono">
-                                00
-                            </strong>
-
-                        </section>
+                </section>
 
 
-                        <section class="data-card card">
+                <!-- =================================
+            Mission Execution Workspace
+            ================================== -->
 
-                            <span class="data-label">
-                                主車
-                            </span>
+                <section id="workspace-execution" class="workspace-panel">
 
-                            <strong id="vehicle-main-status" class="data-value">
-                                未設定
-                            </strong>
+                    <div class="execution-workspace card">
 
-                        </section>
+                        <div class="workspace-section-header">
+
+                            <div>
+                                <span class="eyebrow">
+                                    任務執行
+                                </span>
+
+                                <h3>
+                                    任務執行
+                                </h3>
+                            </div>
+
+                            <div class="execution-header-actions">
+
+                                <div class="execution-status">
+
+                                    <span id="execution-status-badge" class="status-badge running">
+                                        執行中
+                                    </span>
+
+                                </div>
+
+                                <div class="execution-command-actions">
+
+                                    <button id="completeMissionBtn" class="primary-button execution-complete-button"
+                                        type="button">
+                                        ✓ 完成任務
+                                    </button>
+
+                                    <button id="abortMissionBtn" class="secondary-button execution-abort-button"
+                                        type="button">
+                                        ⛔ 中止任務
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
 
 
-                        <section class="data-card card">
+                        <!-- =================================
+                     Execution Map
+                    ================================== -->
 
-                            <span class="data-label">
-                                駕駛
-                            </span>
+                        <div class="execution-map-container">
 
-                            <strong id="vehicle-driver-count" class="data-value mono">
-                                00
-                            </strong>
-
-                        </section>
+                            <div id="execution-map" class="execution-map">
+                            </div>
 
 
-                        <section class="data-card card">
+                            <!-- =================================
+                        CCTV Side Panel
+                        暫時只有容器
+                        下一步再加入內容
+                        ================================== -->
 
-                            <span class="data-label">
-                                車長
-                            </span>
+                            <!-- =================================
+     Execution Monitor Side Panel
+================================== -->
 
-                            <strong id="vehicle-commander-count" class="data-value mono">
-                                00
-                            </strong>
+                            <button id="execution-monitor-toggle" class="execution-monitor-toggle" type="button"
+                                aria-label="開啟監視器">
+                                📹
+                            </button>
 
-                        </section>
+
+                            <aside id="execution-monitor-panel" class="execution-monitor-panel">
+
+                                <div class="execution-monitor-header">
+
+                                    <div>
+                                        <span class="eyebrow">
+                                            任務監控
+                                        </span>
+
+                                        <strong>
+                                            監視器
+                                        </strong>
+                                    </div>
+
+                                    <button id="execution-monitor-close" class="execution-monitor-close" type="button"
+                                        aria-label="關閉監視器">
+                                        ×
+                                    </button>
+
+                                </div>
+
+
+                                <div id="execution-monitor-list" class="execution-monitor-list">
+
+                                    <!-- CCTV 清單之後放這裡 -->
+
+                                </div>
+
+                            </aside>
+
+                        </div>
 
                     </div>
 
+                </section>
 
-                    <!-- =================================
-                    Vehicle Assignment Area
-                    ================================== -->
+                <!-- =================================
+     Planning Confirmation Workspace
+================================== -->
 
-                    <section class="vehicle-assignment-section card">
+                <section id="workspace-planning-confirm" class="workspace-panel">
 
-                        <div class="card-header">
+                    <div class="planning-confirm-workspace">
+
+                        <div class="workspace-section-header">
 
                             <div>
 
                                 <span class="eyebrow">
-                                    編組配置
+                                    規劃確認
                                 </span>
 
                                 <h3>
-                                    任務車輛
+                                    任務規劃確認
                                 </h3>
 
                             </div>
@@ -466,173 +902,401 @@
                         </div>
 
 
-                        <!-- Empty -->
+                        <div id="planning-confirm-content">
 
-                        <div id="vehicle-empty-state" class="vehicle-empty-state">
+                            <!-- 01～04 規劃摘要之後加入 -->
 
-                            <div class="empty-state-icon">
-                                V
-                            </div>
+                        </div>
 
-                            <h3>
-                                尚未配置車輛
-                            </h3>
 
-                            <p>
-                                此任務目前尚未配置任何車輛。
-                            </p>
+                        <div class="planning-actions">
 
-                            <button id="vehicle-empty-add-btn" class="primary-button" type="button">
-                                ＋ 配置第一輛車
+                            <button id="planning-confirm-back-btn" class="secondary-button" type="button">
+                                ← 返回修改
+                            </button>
+
+                            <button id="planning-confirm-submit-btn" class="primary-button" type="button">
+                                確認規劃 →
                             </button>
 
                         </div>
 
+                    </div>
 
-                        <!-- Assignment List -->
-
-                        <div id="vehicle-assignment-list" class="vehicle-assignment-list hidden">
-
-                        </div>
-
-                    </section>
-
-                </div>
-
-            </section>
+                </section>
 
 
-            <!-- =================================
-                 Monitoring Workspace
-            ================================== -->
-
-            <section id="workspace-monitoring" class="workspace-panel">
-
-                <div class="workspace-placeholder card">
-
-                    <span class="eyebrow"> 監控設定 </span>
-
-                    <h3>監控設定</h3>
-
-                    <p>
-                        此區域將整合監視群組與 CCTV 監控。
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================
-                 Execution Workspace
-            ================================== -->
-
-            <section id="workspace-execution" class="workspace-panel">
-
-                <div class="workspace-placeholder card">
-
-                    <span class="eyebrow"> 任務執行 </span>
-
-                    <h3>任務執行</h3>
-
-                    <p>
-                        此區域將顯示 GPS、
-                        車隊位置與任務執行狀態。
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================
+                <!-- =================================
                  Report Workspace
             ================================== -->
 
-            <section id="workspace-report" class="workspace-panel">
+                <section id="workspace-report" class="workspace-panel">
 
-                <div class="workspace-placeholder card">
+                    <div class="workspace-placeholder card">
 
-                    <span class="eyebrow"> 任務報告 </span>
+                        <span class="eyebrow"> 任務報告 </span>
 
-                    <h3>任務報告</h3>
+                        <h3>任務報告</h3>
 
-                    <p>
-                        此區域將顯示任務完成結果、
-                        計畫與實際執行差異。
-                    </p>
+                        <p>
+                            此區域將顯示任務完成結果、
+                            計畫與實際執行差異。
+                        </p>
 
-                </div>
+                    </div>
+
+                </section>
 
             </section>
 
-        </section>
 
-
-        <!-- ====================================
+            <!-- ====================================
              Right Context Panel
         ===================================== -->
 
-        <aside class="mission-context">
+            <aside class="mission-context">
 
-            <div class="context-header">
+                <div class="context-header">
 
-                <span class="eyebrow"> 任務狀態 </span>
+                    <span class="eyebrow"> 任務狀態 </span>
 
-                <h2>任務狀態</h2>
+                    <h2>任務狀態</h2>
 
-            </div>
-
-
-            <section class="context-status card">
-
-                <span class="status-label"> 目前狀態 </span>
-                <strong id="context-status" class="context-status-value"> 尚未選擇 </strong>
-
-            </section>
+                </div>
 
 
-            <section class="context-card card">
+                <section class="context-status card">
 
-                <span class="data-label"> 任務編號 </span>
-                <strong id="context-mission-id" class="mono"> -------- </strong>
+                    <span class="status-label"> 目前狀態 </span>
+                    <strong id="context-status" class="context-status-value"> 尚未選擇 </strong>
 
-            </section>
-
-
-            <section class="context-card card">
-
-                <span class="data-label"> 車輛 </span>
-                <strong id="context-vehicle-count" class="mono"> 00 </strong>
-
-            </section>
+                </section>
 
 
-            <section class="context-card card">
+                <section class="context-card card">
 
-                <span class="data-label"> 路線 </span>
-                <strong id="context-route-status"> 尚未規劃 </strong>
+                    <span class="data-label"> 任務編號 </span>
+                    <strong id="context-mission-id" class="mono"> -------- </strong>
 
-            </section>
+                </section>
 
 
-            <div class="context-footer">
+                <section class="context-card card">
 
-                <span class="status-dot online"></span>
+                    <span class="data-label"> 車輛 </span>
+                    <strong id="context-vehicle-count" class="mono"> 00 </strong>
 
-                <span> 任務中心連線正常 </span>
+                </section>
 
-            </div>
 
-        </aside>
+                <section class="context-card card">
 
-    </main>
+                    <span class="data-label"> 路線 </span>
+                    <strong id="context-route-status"> 尚未規劃 </strong>
+
+                </section>
+
+
+                <div class="context-footer">
+
+                    <span class="status-dot online"></span>
+
+                    <span> 任務中心連線正常 </span>
+
+                </div>
+
+            </aside>
+
+        </main>
+
+    </div>
 
 
     <!-- ========================================
          Existing Map / CCTV Workspace
          暫時保留既有功能
     ========================================= -->
+
+    <!-- ========================================
+         Create Mission Modal
+    ========================================= -->
+
+    <div id="create-mission-modal-overlay" class="modal-overlay" onclick="closeCreateMissionModal()">
+
+        <div class="modal-box" onclick="event.stopPropagation()">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        任務中心
+                    </span>
+
+                    <h3>
+                        建立任務
+                    </h3>
+
+                </div>
+
+                <button class="modal-close" type="button" onclick="closeCreateMissionModal()">
+
+                    ×
+
+                </button>
+
+            </div>
+
+
+            <!-- Mission Name -->
+
+            <div class="form-group">
+
+                <label for="create-mission-name">
+                    任務名稱
+                </label>
+
+                <input type="text" id="create-mission-name" placeholder="例如：補給任務001">
+
+            </div>
+
+
+            <!-- Description -->
+
+            <div class="form-group">
+
+                <label for="create-mission-description">
+                    任務說明
+                </label>
+
+                <textarea id="create-mission-description" rows="3" placeholder="輸入任務說明"></textarea>
+
+            </div>
+
+
+            <!-- Purpose -->
+
+            <div class="form-group">
+
+                <label for="create-mission-purpose">
+                    任務目的
+                </label>
+
+                <textarea id="create-mission-purpose" rows="3" placeholder="輸入任務目的"></textarea>
+
+            </div>
+
+
+            <!-- Start Time -->
+
+            <div class="form-group">
+
+                <label for="create-mission-start-time">
+                    任務開始時間
+                </label>
+
+                <input type="datetime-local" id="create-mission-start-time">
+
+            </div>
+
+
+            <!-- Actions -->
+
+            <div class="modal-actions">
+
+                <button type="button" class="secondary-button" onclick="closeCreateMissionModal()">
+
+                    取消
+
+                </button>
+
+                <button type="button" class="primary-button" id="create-mission-confirm-btn">
+
+                    建立任務
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ========================================
+     Edit Mission Modal
+======================================== -->
+
+    <div id="edit-mission-modal-overlay" class="modal-overlay" onclick="closeEditMissionModal()">
+
+        <div class="modal-box" onclick="event.stopPropagation()">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        任務中心
+                    </span>
+
+                    <h3>
+                        編輯任務
+                    </h3>
+
+                </div>
+
+                <button class="modal-close" type="button" onclick="closeEditMissionModal()">
+
+                    ×
+
+                </button>
+
+            </div>
+
+
+            <!-- Mission Name -->
+
+            <div class="form-group">
+
+                <label for="edit-mission-name">
+                    任務名稱
+                </label>
+
+                <input type="text" id="edit-mission-name" placeholder="輸入任務名稱">
+
+            </div>
+
+
+            <!-- Description -->
+
+            <div class="form-group">
+
+                <label for="edit-mission-description">
+                    任務說明
+                </label>
+
+                <textarea id="edit-mission-description" rows="3" placeholder="輸入任務說明"></textarea>
+
+            </div>
+
+
+            <!-- Purpose -->
+
+            <div class="form-group">
+
+                <label for="edit-mission-purpose">
+                    任務目的
+                </label>
+
+                <textarea id="edit-mission-purpose" rows="3" placeholder="輸入任務目的"></textarea>
+
+            </div>
+
+
+            <!-- Start Time -->
+
+            <div class="form-group">
+
+                <label for="edit-mission-start-time">
+                    任務開始時間
+                </label>
+
+                <input type="datetime-local" id="edit-mission-start-time">
+
+            </div>
+
+
+            <!-- Actions -->
+
+            <div class="modal-actions">
+
+                <button type="button" class="secondary-button" onclick="closeEditMissionModal()">
+
+                    取消
+
+                </button>
+
+                <button type="button" class="primary-button" id="edit-mission-confirm-btn">
+
+                    儲存修改
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ========================================
+     Start Planning Confirmation Modal
+======================================== -->
+
+    <div id="start-planning-modal-overlay" class="modal-overlay" onclick="closeStartPlanningModal()">
+
+        <div class="modal-box" onclick="event.stopPropagation()">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        任務中心
+                    </span>
+
+                    <h3>
+                        開始規劃任務
+                    </h3>
+
+                </div>
+
+                <button class="modal-close" type="button" onclick="closeStartPlanningModal()">
+
+                    ×
+
+                </button>
+
+            </div>
+
+
+            <div class="start-planning-content">
+
+                <p>
+                    任務「<strong id="start-planning-mission-name">-</strong>」
+                    即將進入正式規劃階段。
+                </p>
+
+                <p>
+                    進入規劃階段後，可以進行：
+                </p>
+
+                <ul>
+                    <li>車輛配置</li>
+                    <li>路線規劃</li>
+                    <li>監控設定</li>
+                </ul>
+
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button type="button" class="secondary-button" onclick="closeStartPlanningModal()">
+
+                    取消
+
+                </button>
+
+                <button type="button" class="primary-button" id="start-planning-confirm-btn">
+
+                    開始規劃
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
 
     <!-- ========================================
      Mission Vehicle Assignment Modal
@@ -834,7 +1498,160 @@
         </div>
 
     </div>
+    <!-- ========================================
+     Complete Mission Confirmation Modal
+======================================== -->
 
+    <div id="complete-mission-modal-overlay" class="modal-overlay" onclick="closeCompleteMissionModal()">
+
+        <div class="modal-box" onclick="event.stopPropagation()">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        任務執行
+                    </span>
+
+                    <h3>
+                        完成任務
+                    </h3>
+
+                </div>
+
+                <button class="modal-close" type="button" onclick="closeCompleteMissionModal()">
+
+                    ×
+
+                </button>
+
+            </div>
+
+
+            <div class="start-planning-content">
+
+                <p>
+                    確定要將目前任務標記為
+                    <strong>已完成</strong>嗎？
+                </p>
+
+                <p>
+                    完成後：
+                </p>
+
+                <ul>
+
+                    <li>Mission 將進入 COMPLETED</li>
+
+                    <li>停止目前任務 Tracking</li>
+
+                    <li>釋放任務車輛</li>
+
+                    <li>Assignment 將保留為歷史紀錄</li>
+
+                </ul>
+
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button type="button" class="secondary-button" onclick="closeCompleteMissionModal()">
+
+                    取消
+
+                </button>
+
+                <button type="button" class="primary-button" id="complete-mission-confirm-btn">
+
+                    確認完成
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================
+     Abort Mission Confirmation Modal
+======================================== -->
+
+    <div id="abort-mission-modal-overlay" class="modal-overlay" onclick="closeAbortMissionModal()">
+
+        <div class="modal-box" onclick="event.stopPropagation()">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <span class="eyebrow">
+                        任務執行
+                    </span>
+
+                    <h3>
+                        中止任務
+                    </h3>
+
+                </div>
+
+                <button class="modal-close" type="button" onclick="closeAbortMissionModal()">
+
+                    ×
+
+                </button>
+
+            </div>
+
+
+            <div class="start-planning-content">
+
+                <p>
+                    確定要將目前任務
+                    <strong>中止</strong>嗎？
+                </p>
+
+                <p>
+                    中止後：
+                </p>
+
+                <ul>
+
+                    <li>Mission 將進入 ABORTED</li>
+
+                    <li>停止目前任務 Tracking</li>
+
+                    <li>釋放任務車輛</li>
+
+                    <li>Assignment 將保留為歷史紀錄</li>
+
+                </ul>
+
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button type="button" class="secondary-button" onclick="closeAbortMissionModal()">
+
+                    返回
+
+                </button>
+
+                <button type="button" class="primary-button" id="abort-mission-confirm-btn">
+
+                    確認中止
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
 
     <!-- ========================================
          Libraries
@@ -846,7 +1663,11 @@
     <script src="api.js"></script>
     <script src="global-state.js"></script>
     <script src="utils.js"></script>
+    <script src="auth/auth.js"></script>
     <script src="mission-api.js"></script>
+    <script src="mission/mission-monitoring.js"></script>
+    <script src="mission/mission-execution.js"></script>
+    <script src="tracking/tracking.js"></script>
     <script src="mission/mission-workspace.js"></script>
     <script src="mission/mission-tabs.js"></script>
     <script src="mission/mission-list.js"></script>

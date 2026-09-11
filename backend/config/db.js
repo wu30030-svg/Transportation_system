@@ -1,4 +1,7 @@
-﻿const { Pool } = require("pg");
+﻿require("dotenv").config({
+    path: require("path").join(__dirname, "..", ".env")
+});
+const { Pool } = require("pg");
 
 const usingDatabaseUrl = Boolean(process.env.DATABASE_URL);
 

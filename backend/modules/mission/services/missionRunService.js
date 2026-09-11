@@ -2,6 +2,8 @@
 
 const missionRepository = require("../repositories/missionRepository");
 const missionRunRepository = require("../repositories/missionRunRepository");
+const missionVehicleAssignmentRepository =
+    require("../repositories/missionVehicleAssignmentRepository");
 
 const {
     MISSION_STATUS
@@ -205,7 +207,7 @@ async function completeMissionRun(missionRunId) {
 
 
         // ------------------------------------
-        // Mission
+        // Lock Mission
         // ------------------------------------
 
         const missionResult =
@@ -279,11 +281,12 @@ async function completeMissionRun(missionRunId) {
         // ------------------------------------
 
         const updatedMissionRun =
-            await missionRunRepository.updateMissionRunStatus(
-                missionRunId,
-                MISSION_STATUS.COMPLETED,
-                client
-            );
+            await missionRunRepository
+                .updateMissionRunStatus(
+                    missionRunId,
+                    MISSION_STATUS.COMPLETED,
+                    client
+                );
 
 
         // ------------------------------------
@@ -291,19 +294,38 @@ async function completeMissionRun(missionRunId) {
         // ------------------------------------
 
         const updatedMission =
-            await missionRepository.updateMissionStatus(
-                mission.id,
-                MISSION_STATUS.COMPLETED,
-                client
-            );
+            await missionRepository
+                .updateMissionStatus(
+                    mission.id,
+                    MISSION_STATUS.COMPLETED,
+                    client
+                );
 
+
+        // ------------------------------------
+        // Release Mission Resources
+        // ------------------------------------
+
+        const releasedAssignments =
+            await missionVehicleAssignmentRepository
+                .releaseAssignmentsByMissionId(
+                    mission.id,
+                    MISSION_STATUS.COMPLETED,
+                    client
+                );
+
+
+        // ------------------------------------
+        // Commit
+        // ------------------------------------
 
         await client.query("COMMIT");
 
 
         return {
             mission: updatedMission,
-            missionRun: updatedMissionRun
+            missionRun: updatedMissionRun,
+            releasedAssignments
         };
 
     } catch (error) {
@@ -363,7 +385,7 @@ async function abortMissionRun(missionRunId) {
 
 
         // ------------------------------------
-        // Mission
+        // Lock Mission
         // ------------------------------------
 
         const missionResult =
@@ -437,11 +459,12 @@ async function abortMissionRun(missionRunId) {
         // ------------------------------------
 
         const updatedMissionRun =
-            await missionRunRepository.updateMissionRunStatus(
-                missionRunId,
-                MISSION_STATUS.ABORTED,
-                client
-            );
+            await missionRunRepository
+                .updateMissionRunStatus(
+                    missionRunId,
+                    MISSION_STATUS.ABORTED,
+                    client
+                );
 
 
         // ------------------------------------
@@ -449,19 +472,38 @@ async function abortMissionRun(missionRunId) {
         // ------------------------------------
 
         const updatedMission =
-            await missionRepository.updateMissionStatus(
-                mission.id,
-                MISSION_STATUS.ABORTED,
-                client
-            );
+            await missionRepository
+                .updateMissionStatus(
+                    mission.id,
+                    MISSION_STATUS.ABORTED,
+                    client
+                );
 
+
+        // ------------------------------------
+        // Release Mission Resources
+        // ------------------------------------
+
+        const releasedAssignments =
+            await missionVehicleAssignmentRepository
+                .releaseAssignmentsByMissionId(
+                    mission.id,
+                    MISSION_STATUS.ABORTED,
+                    client
+                );
+
+
+        // ------------------------------------
+        // Commit
+        // ------------------------------------
 
         await client.query("COMMIT");
 
 
         return {
             mission: updatedMission,
-            missionRun: updatedMissionRun
+            missionRun: updatedMissionRun,
+            releasedAssignments
         };
 
     } catch (error) {

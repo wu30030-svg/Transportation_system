@@ -542,17 +542,35 @@ async function updateAssignment(
 // ========================================
 // Release Assignments By Mission
 // ========================================
+//
+// 支援兩種模式：
+//
+// 1. 沒有傳 client
+//    → 自己建立 transaction
+//
+// 2. 有傳 client
+//    → 使用外部 transaction
+//    → 讓 Mission Run Completion / Abort
+//       可以與 Resource Release 共用同一個 transaction
+//
 
 async function releaseAssignmentsByMissionId(
     missionId,
-    assignmentStatus
+    assignmentStatus,
+    externalClient = null
 ) {
 
-    const client = await pool.connect();
+    const client =
+        externalClient || await pool.connect();
+
+    const ownTransaction =
+        !externalClient;
 
     try {
 
-        await client.query("BEGIN");
+        if (ownTransaction) {
+            await client.query("BEGIN");
+        }
 
 
         // ------------------------------------
@@ -576,7 +594,10 @@ async function releaseAssignmentsByMissionId(
         // Release Vehicles
         // ------------------------------------
 
-        for (const assignment of assignmentResult.rows) {
+        for (
+            const assignment
+            of assignmentResult.rows
+        ) {
 
             await client.query(
                 `
@@ -584,7 +605,8 @@ async function releaseAssignmentsByMissionId(
                 SET
                     status = 'AVAILABLE',
                     updated_at = NOW()
-                WHERE id = $1;
+                WHERE id = $1
+                  AND status = 'ASSIGNED';
                 `,
                 [assignment.vehicle_id]
             );
@@ -592,36 +614,47 @@ async function releaseAssignmentsByMissionId(
 
 
         // ------------------------------------
-        // Complete / Cancel Assignments
+        // Update Assignment Status
         // ------------------------------------
 
-        await client.query(
-            `
-            UPDATE mission_vehicle_assignments
-            SET
-                status = $1,
-                updated_at = NOW()
-            WHERE mission_id = $2
-              AND status = 'ASSIGNED';
-            `,
-            [
-                assignmentStatus,
-                missionId
-            ]
-        );
+        const updatedAssignmentsResult =
+            await client.query(
+                `
+                UPDATE mission_vehicle_assignments
+                SET
+                    status = $1,
+                    updated_at = NOW()
+                WHERE mission_id = $2
+                  AND status = 'ASSIGNED'
+                RETURNING *;
+                `,
+                [
+                    assignmentStatus,
+                    missionId
+                ]
+            );
 
 
-        await client.query("COMMIT");
+        if (ownTransaction) {
+            await client.query("COMMIT");
+        }
+
+
+        return updatedAssignmentsResult.rows;
 
     } catch (error) {
 
-        await client.query("ROLLBACK");
+        if (ownTransaction) {
+            await client.query("ROLLBACK");
+        }
 
         throw error;
 
     } finally {
 
-        client.release();
+        if (ownTransaction) {
+            client.release();
+        }
     }
 }
 
