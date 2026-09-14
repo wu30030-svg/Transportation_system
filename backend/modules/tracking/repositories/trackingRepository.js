@@ -268,7 +268,10 @@ async function upsertShuttleLocation({
 }
 
 
-async function findCurrentShuttleLocations(db = pool) {
+async function findCurrentShuttleLocations(
+    accessContext,
+    db = pool
+) {
     const query = `
         SELECT
             sl.id AS tracking_location_id,
@@ -289,10 +292,18 @@ async function findCurrentShuttleLocations(db = pool) {
         INNER JOIN personnel AS p
             ON p.id = sl.personnel_id
 
-        ORDER BY p.personnel_number ASC;
+        INNER JOIN users AS u
+            ON u.id = p.user_id
+
+        WHERE u.access_context = $1
+
+        ORDER BY
+            p.personnel_number ASC;
     `;
 
-    const result = await db.query(query);
+    const result = await db.query(query, [
+        accessContext
+    ]);
 
     return result.rows;
 }

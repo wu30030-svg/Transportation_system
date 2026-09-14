@@ -418,14 +418,48 @@ function initializeLoginUI() {
                 // Login Routing
                 // ========================================
 
-                if (user.access_context) {
+                // ========================================
+                // Shuttle Monitor
+                // ========================================
 
-                    // ========================================
-                    // Shuttle Center
-                    // ========================================
+                if (
+                    Number(user.role_id) === 6 &&
+                    user.access_context
+                ) {
 
                     console.log(
-                        "[Auth] → Shuttle Center:",
+                        "[Auth] → Shuttle Monitor:",
+                        user.access_context
+                    );
+
+                    // ----------------------------------------
+                    // Shuttle Monitor
+                    // ----------------------------------------
+
+                    if (
+                        user.access_context === "營區開放_A路線" ||
+                        user.access_context === "營區開放_B路線" ||
+                        user.access_context === "營區開放_C路線"
+                    ) {
+
+                        window.location.href =
+                            "./shuttle/shuttle-monitor.html";
+
+                        return;
+
+                    }
+                }
+                // ========================================
+                // Shuttle Driver
+                // ========================================
+
+                if (
+                    Number(user.role_id) === 4 &&
+                    user.access_context
+                ) {
+
+                    console.log(
+                        "[Auth] → Shuttle Driver:",
                         user.access_context
                     );
 
@@ -435,6 +469,15 @@ function initializeLoginUI() {
                     return;
 
                 }
+
+
+                // ========================================
+                // Mission Center
+                // ========================================
+
+                console.log(
+                    "[Auth] → Mission Center"
+                );
 
 
                 // ========================================

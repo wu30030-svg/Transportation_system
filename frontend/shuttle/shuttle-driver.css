@@ -274,3 +274,23 @@ body {
     }
 
 }
+
+#logout-btn {
+    padding: 7px 12px;
+
+    border: 1px solid #39424e;
+    border-radius: 6px;
+
+    background: #171d25;
+    color: #f2f4f7;
+
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+#logout-btn:hover {
+    background: #242b34;
+}

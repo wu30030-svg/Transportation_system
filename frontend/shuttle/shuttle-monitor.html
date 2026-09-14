@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <title>A 路線監控｜接駁車中心</title>
+
+    <link rel="stylesheet" href="./shuttle-monitor.css">
+
+
+</head>
+
+<body>
+
+
+    <main class="monitor-app">
+
+        <!-- Header -->
+        <header class="monitor-header">
+
+            <div>
+                <div class="system-title">
+                    接駁車中心
+                </div>
+
+                <div class="system-subtitle">
+                    Shuttle Center
+                </div>
+            </div>
+
+            <div class="header-actions">
+
+                <div class="route-badge">
+                    A 路線監控
+                </div>
+
+                <button id="logout-btn" type="button">
+                    登出
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- Map -->
+        <section class="map-section">
+
+            <div id="shuttleMap"></div>
+
+        </section>
+
+    </main>
+
+
+    <!-- 共用設定 -->
+    <script src="../config.js"></script>
+
+    <!-- 共用登入 / JWT -->
+    <script src="../auth/auth.js"></script>
+
+    <!-- Google Maps -->
+    <!--
+    請將這裡的 YOUR_GOOGLE_MAPS_API_KEY
+    換成你目前 index.html 使用的 Google Maps API Key。
+-->
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqnZRFp5mWLKUUmh-v0SjSRBi9s-lsAQk&libraries=geometry,marker"
+        defer>
+        </script>
+
+    <!-- A 路線監控 -->
+    <script src="./shuttle-monitor.js"></script>
+
+
+</body>
+
+</html>

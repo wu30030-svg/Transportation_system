@@ -151,3 +151,38 @@ function startGPS() {
 
 startGPS();
 
+// ========================================
+// Logout
+// ========================================
+
+const logoutButton =
+    document.getElementById("logout-btn");
+
+if (logoutButton) {
+
+    logoutButton.addEventListener(
+        "click",
+        () => {
+
+            // 停止 GPS 追蹤
+            if (gpsWatchId !== null) {
+
+                navigator.geolocation.clearWatch(
+                    gpsWatchId
+                );
+
+                gpsWatchId = null;
+
+            }
+
+            // 清除登入狀態
+            logout();
+
+            // 回到登入頁
+            window.location.href =
+                "../index.html";
+
+        }
+    );
+
+}

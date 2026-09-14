@@ -318,8 +318,20 @@ async function recordShuttleLocation({
 }
 
 
-async function getCurrentShuttleLocations() {
-    return await trackingRepository.findCurrentShuttleLocations();
+async function getCurrentShuttleLocations(accessContext) {
+
+    if (!accessContext) {
+        const error =
+            new Error("Access context is required");
+
+        error.statusCode = 403;
+
+        throw error;
+    }
+
+    return await trackingRepository.findCurrentShuttleLocations(
+        accessContext
+    );
 }
 
 module.exports = {

@@ -1,0 +1,205 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+
+
+    font-family:
+        Inter,
+        "Noto Sans TC",
+        "Microsoft JhengHei",
+        sans-serif;
+
+    background: #0b0f14;
+
+
+}
+
+body {
+    color: #f2f4f7;
+}
+
+.monitor-app {
+    width: 100%;
+    height: 100vh;
+
+
+    display: flex;
+    flex-direction: column;
+
+
+}
+
+/* ========================================
+Header
+======================================== */
+
+.monitor-header {
+    height: 72px;
+    flex-shrink: 0;
+
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 24px;
+
+    background: #11161d;
+    border-bottom: 1px solid #242b34;
+
+
+}
+
+.system-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.system-subtitle {
+    margin-top: 3px;
+
+
+    font-family: "JetBrains Mono", monospace;
+
+    font-size: 11px;
+    letter-spacing: 0.12em;
+
+    color: #7f8996;
+    text-transform: uppercase;
+
+
+}
+
+.route-badge {
+    padding: 7px 12px;
+
+
+    border: 1px solid #39424e;
+    border-radius: 6px;
+
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 700;
+
+    letter-spacing: 0.08em;
+
+    background: #171d25;
+    color: #f2c14e;
+
+
+}
+
+/* ========================================
+Map
+======================================== */
+
+.map-section {
+    flex: 1;
+    min-height: 0;
+
+
+    position: relative;
+
+
+}
+
+#shuttleMap {
+    width: 100%;
+    height: calc(100vh - 72px);
+}
+
+/* ========================================
+Shuttle Marker
+======================================== */
+
+.shuttle-marker {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+
+    pointer-events: none;
+
+
+}
+
+.shuttle-dot {
+    width: 8px;
+    height: 8px;
+
+
+    border-radius: 50%;
+
+    background: #f2c14e;
+
+    box-shadow:
+        0 0 0 2px rgba(242, 193, 78, 0.18),
+        0 0 10px rgba(242, 193, 78, 0.55);
+
+
+}
+
+.shuttle-label {
+    padding: 2px 4px;
+
+
+    border-radius: 3px;
+
+    background: rgba(11, 15, 20, 0.86);
+
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    font-weight: 700;
+
+    color: #f2f4f7;
+
+    white-space: nowrap;
+
+
+}
+
+/* ========================================
+Google Maps UI 微調
+======================================== */
+
+.gm-style {
+    font-family:
+        Inter,
+        "Noto Sans TC",
+        "Microsoft JhengHei",
+        sans-serif;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#logout-btn {
+    padding: 7px 12px;
+
+    border: 1px solid #39424e;
+    border-radius: 6px;
+
+    background: #171d25;
+    color: #f2f4f7;
+
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+#logout-btn:hover {
+    background: #242b34;
+}

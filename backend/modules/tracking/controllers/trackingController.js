@@ -242,8 +242,13 @@ async function getCurrentShuttleLocations(req, res) {
             });
         }
 
+        const accessContext =
+            req.user.access_context;
+
         const locations =
-            await trackingService.getCurrentShuttleLocations();
+            await trackingService.getCurrentShuttleLocations(
+                accessContext
+            );
 
         return res.status(200).json({
             success: true,
