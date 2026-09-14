@@ -173,9 +173,102 @@ async function getCurrentMissionLocations(
     }
 }
 
+async function recordShuttleLocation(req, res) {
+    try {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: "Authentication required"
+            });
+        }
+
+        const personnelId = req.user.personnel_id;
+
+        if (!personnelId) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    "Authenticated account is not linked to personnel"
+            });
+        }
+
+        const {
+            latitude,
+            longitude,
+            accuracy,
+            speed,
+            heading,
+            recordedAt
+        } = req.body;
+
+        const result =
+            await trackingService.recordShuttleLocation({
+                personnelId,
+                latitude,
+                longitude,
+                accuracy,
+                speed,
+                heading,
+                recordedAt
+            });
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+
+    } catch (error) {
+        console.error(
+            "[Shuttle Tracking] Record location error:",
+            error
+        );
+
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message:
+                error.message ||
+                "Failed to record shuttle location"
+        });
+    }
+}
+
+
+async function getCurrentShuttleLocations(req, res) {
+    try {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: "Authentication required"
+            });
+        }
+
+        const locations =
+            await trackingService.getCurrentShuttleLocations();
+
+        return res.status(200).json({
+            success: true,
+            data: locations
+        });
+
+    } catch (error) {
+        console.error(
+            "[Shuttle Tracking] Get current locations error:",
+            error
+        );
+
+        return res.status(error.statusCode || 500).json({
+            success: false,
+            message:
+                error.message ||
+                "Failed to get current shuttle locations"
+        });
+    }
+}
 
 module.exports = {
     recordLocation,
     getMissionRunTracking,
-    getCurrentMissionLocations
+    getCurrentMissionLocations,
+    recordShuttleLocation,
+    getCurrentShuttleLocations
 };

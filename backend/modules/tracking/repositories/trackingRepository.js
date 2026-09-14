@@ -212,10 +212,96 @@ async function findRunningAssignmentByPersonnelId(
     return result.rows[0] || null;
 }
 
+async function upsertShuttleLocation({
+    personnelId,
+    latitude,
+    longitude,
+    accuracy,
+    speed,
+    heading,
+    recordedAt
+}, db = pool) {
+    const query = `
+        INSERT INTO shuttle_locations (
+            personnel_id,
+            latitude,
+            longitude,
+            accuracy,
+            speed,
+            heading,
+            recorded_at,
+            updated_at
+        )
+        VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6,
+            COALESCE($7::timestamptz, NOW()),
+            NOW()
+        )
+        ON CONFLICT (personnel_id)
+        DO UPDATE SET
+            latitude = EXCLUDED.latitude,
+            longitude = EXCLUDED.longitude,
+            accuracy = EXCLUDED.accuracy,
+            speed = EXCLUDED.speed,
+            heading = EXCLUDED.heading,
+            recorded_at = EXCLUDED.recorded_at,
+            updated_at = NOW()
+        RETURNING *;
+    `;
+
+    const result = await db.query(query, [
+        personnelId,
+        latitude,
+        longitude,
+        accuracy ?? null,
+        speed ?? null,
+        heading ?? null,
+        recordedAt ?? null
+    ]);
+
+    return result.rows[0];
+}
+
+
+async function findCurrentShuttleLocations(db = pool) {
+    const query = `
+        SELECT
+            sl.id AS tracking_location_id,
+            sl.personnel_id,
+            sl.latitude,
+            sl.longitude,
+            sl.accuracy,
+            sl.speed,
+            sl.heading,
+            sl.recorded_at,
+            sl.updated_at,
+
+            p.personnel_number,
+            p.name AS personnel_name
+
+        FROM shuttle_locations AS sl
+
+        INNER JOIN personnel AS p
+            ON p.id = sl.personnel_id
+
+        ORDER BY p.personnel_number ASC;
+    `;
+
+    const result = await db.query(query);
+
+    return result.rows;
+}
 
 module.exports = {
     createTrackingLocation,
     findLocationsByMissionRunId,
     findCurrentLocationsByMissionId,
-    findRunningAssignmentByPersonnelId
+    findRunningAssignmentByPersonnelId,
+    upsertShuttleLocation,
+    findCurrentShuttleLocations
 };

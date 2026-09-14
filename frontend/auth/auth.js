@@ -397,16 +397,53 @@ function initializeLoginUI() {
 
             try {
 
-                await login(
+                const loginData = await login(
                     username,
                     password
                 );
-
 
                 console.log(
                     "[Auth] Login UI 登入成功。"
                 );
 
+                const user = loginData.user;
+
+                console.log(
+                    "[Auth] access_context:",
+                    user.access_context
+                );
+
+
+                // ========================================
+                // Login Routing
+                // ========================================
+
+                if (user.access_context) {
+
+                    // ========================================
+                    // Shuttle Center
+                    // ========================================
+
+                    console.log(
+                        "[Auth] → Shuttle Center:",
+                        user.access_context
+                    );
+
+                    window.location.href =
+                        "./shuttle/shuttle-driver.html";
+
+                    return;
+
+                }
+
+
+                // ========================================
+                // Mission Center
+                // ========================================
+
+                console.log(
+                    "[Auth] → Mission Center"
+                );
 
                 loginScreen.style.display =
                     "none";

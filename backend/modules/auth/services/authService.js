@@ -51,6 +51,7 @@ async function login(username, password) {
         user_id: user.id,
         username: user.username,
         role_id: user.role_id,
+        access_context: user.access_context || null,
         personnel_id: user.personnel_id || null
     };
 
@@ -70,6 +71,7 @@ async function login(username, password) {
             username: user.username,
             name: user.name,
             role_id: user.role_id,
+            access_context: user.access_context || null,
 
             personnel_id: user.personnel_id || null,
             personnel_number: user.personnel_number || null,

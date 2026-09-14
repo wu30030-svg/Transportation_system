@@ -50,5 +50,16 @@ router.get(
     trackingController.getCurrentMissionLocations
 );
 
+// POST /api/tracking/shuttle/location
+router.post(
+    "/shuttle/location",
+    trackingController.recordShuttleLocation
+);
+
+// GET /api/tracking/shuttle/current
+router.get(
+    "/shuttle/current",
+    trackingController.getCurrentShuttleLocations
+);
 
 module.exports = router;

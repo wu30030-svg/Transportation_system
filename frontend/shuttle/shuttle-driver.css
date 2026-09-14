@@ -1,0 +1,276 @@
+:root {
+    --bg: #0b0f14;
+    --panel: #121820;
+    --panel-light: #18212b;
+    --border: #27323d;
+
+    --text: #f2f5f7;
+    --muted: #8c99a6;
+
+    --accent: #f2b84b;
+    --success: #3ddc84;
+    --danger: #ff5c5c;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+
+    background: var(--bg);
+    color: var(--text);
+
+    font-family:
+        Inter,
+        "Noto Sans TC",
+        "Microsoft JhengHei",
+        sans-serif;
+}
+
+body {
+    min-height: 100vh;
+}
+
+.driver-app {
+    width: 100%;
+    max-width: 520px;
+    min-height: 100vh;
+
+    margin: 0 auto;
+    padding: 20px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+
+/* Header */
+
+.driver-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 8px 2px 12px;
+}
+
+.system-title {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.system-subtitle {
+    margin-top: 3px;
+
+    font-size: 11px;
+    letter-spacing: 1px;
+
+    color: var(--muted);
+    text-transform: uppercase;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.status-dot,
+.sending-dot {
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: var(--success);
+
+    box-shadow:
+        0 0 8px rgba(61, 220, 132, 0.6);
+}
+
+
+/* Driver */
+
+.driver-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    padding: 22px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.vehicle-icon {
+    width: 58px;
+    height: 58px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--panel-light);
+
+    border-radius: 12px;
+
+    font-size: 28px;
+}
+
+.vehicle-number {
+    font-family:
+        "JetBrains Mono",
+        monospace;
+
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.driver-name {
+    margin-top: 5px;
+
+    font-size: 14px;
+}
+
+.route-name {
+    margin-top: 3px;
+
+    font-size: 12px;
+    color: var(--muted);
+}
+
+
+/* GPS */
+
+.gps-card {
+    padding: 32px 20px;
+
+    text-align: center;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.gps-status-icon {
+    color: var(--success);
+
+    font-size: 28px;
+
+    line-height: 1;
+
+    text-shadow:
+        0 0 15px rgba(61, 220, 132, 0.7);
+}
+
+.gps-status-title {
+    margin-top: 12px;
+
+    font-size: 26px;
+    font-weight: 800;
+}
+
+.gps-status-description {
+    margin-top: 7px;
+
+    font-size: 13px;
+    color: var(--muted);
+}
+
+
+/* GPS information */
+
+.gps-info-card {
+    padding: 6px 20px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    min-height: 52px;
+
+    border-bottom: 1px solid var(--border);
+
+    font-size: 13px;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row span {
+    color: var(--muted);
+}
+
+.info-row strong {
+    font-family:
+        "JetBrains Mono",
+        monospace;
+
+    font-size: 13px;
+}
+
+
+/* Sending */
+
+.sending-card {
+    padding: 18px 20px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.sending-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sending-title {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.sending-description {
+    margin-top: 3px;
+
+    font-size: 12px;
+    color: var(--muted);
+}
+
+
+/* Mobile */
+
+@media (max-width: 480px) {
+
+    .driver-app {
+        padding: 16px;
+    }
+
+    .gps-status-title {
+        font-size: 24px;
+    }
+
+}

@@ -14,6 +14,8 @@ async function findUserByUsername(username) {
             u.password_hash,
             u.name,
             u.role_id,
+            u.access_context,
+            u.remark,
             u.is_active,
 
             p.id AS personnel_id,
@@ -48,6 +50,8 @@ async function findUserById(userId) {
             u.username,
             u.name,
             u.role_id,
+            u.access_context,
+            u.remark,
             u.is_active,
 
             p.id AS personnel_id,

@@ -214,9 +214,118 @@ async function getCurrentMissionLocations(
         );
 }
 
+async function recordShuttleLocation({
+    personnelId,
+    latitude,
+    longitude,
+    accuracy,
+    speed,
+    heading,
+    recordedAt
+}) {
+    if (!personnelId) {
+        const error =
+            new Error("Personnel ID is required");
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (
+        typeof latitude !== "number" ||
+        Number.isNaN(latitude) ||
+        latitude < -90 ||
+        latitude > 90
+    ) {
+        const error =
+            new Error("Invalid latitude");
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (
+        typeof longitude !== "number" ||
+        Number.isNaN(longitude) ||
+        longitude < -180 ||
+        longitude > 180
+    ) {
+        const error =
+            new Error("Invalid longitude");
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (
+        accuracy !== undefined &&
+        accuracy !== null &&
+        (
+            typeof accuracy !== "number" ||
+            Number.isNaN(accuracy) ||
+            accuracy < 0
+        )
+    ) {
+        const error =
+            new Error("Invalid accuracy");
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (
+        speed !== undefined &&
+        speed !== null &&
+        (
+            typeof speed !== "number" ||
+            Number.isNaN(speed) ||
+            speed < 0
+        )
+    ) {
+        const error =
+            new Error("Invalid speed");
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (
+        heading !== undefined &&
+        heading !== null &&
+        (
+            typeof heading !== "number" ||
+            Number.isNaN(heading) ||
+            heading < 0 ||
+            heading >= 360
+        )
+    ) {
+        const error =
+            new Error("Invalid heading");
+
+        error.statusCode = 400;
+        throw error;
+    }
+
+    return await trackingRepository.upsertShuttleLocation({
+        personnelId,
+        latitude,
+        longitude,
+        accuracy,
+        speed,
+        heading,
+        recordedAt
+    });
+}
+
+
+async function getCurrentShuttleLocations() {
+    return await trackingRepository.findCurrentShuttleLocations();
+}
 
 module.exports = {
     recordLocation,
     getMissionRunTracking,
-    getCurrentMissionLocations
+    getCurrentMissionLocations,
+    recordShuttleLocation,
+    getCurrentShuttleLocations
 };

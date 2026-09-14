@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>接駁車勤務</title>
+
+    <link rel="stylesheet" href="./shuttle-driver.css">
+</head>
+
+<body>
+
+    <main class="driver-app">
+
+        <!-- Header -->
+        <header class="driver-header">
+            <div>
+                <div class="system-title">
+                    接駁車中心
+                </div>
+
+                <div class="system-subtitle">
+                    Shuttle Center
+                </div>
+            </div>
+
+            <div class="connection-status">
+                <span class="status-dot"></span>
+                <span>系統正常</span>
+            </div>
+        </header>
+
+
+        <!-- Driver Identity -->
+        <section class="driver-card">
+
+            <div class="vehicle-icon">
+                🚌
+            </div>
+
+            <div class="driver-info">
+
+                <div class="vehicle-number">
+                    A-001
+                </div>
+
+                <div class="driver-name">
+                    測試駕駛
+                </div>
+
+                <div class="route-name">
+                    A 路線
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- GPS Status -->
+        <section class="gps-card">
+
+            <div class="gps-status-icon">
+                ●
+            </div>
+
+            <div class="gps-status-title">
+                定位正常
+            </div>
+
+            <div class="gps-status-description">
+                GPS 定位資料正在傳送
+            </div>
+
+        </section>
+
+
+        <!-- GPS Information -->
+        <section class="gps-info-card">
+
+            <div class="info-row">
+                <span>GPS 狀態</span>
+                <strong>已啟用</strong>
+            </div>
+
+            <div class="info-row">
+                <span>最後更新</span>
+                <strong id="lastUpdate">--:--:--</strong>
+            </div>
+
+            <div class="info-row">
+                <span>定位精度</span>
+                <strong id="accuracy">--</strong>
+            </div>
+
+        </section>
+
+
+        <!-- Sending Status -->
+        <section class="sending-card">
+
+            <div class="sending-indicator">
+                <span class="sending-dot"></span>
+
+                <div>
+                    <div class="sending-title">
+                        正在傳送定位
+                    </div>
+
+                    <div class="sending-description">
+                        請保持手機定位與網路開啟
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="../config.js"></script>
+    <script src="../auth.js"></script>
+    <script src="./shuttle-driver.js"></script>
+
+</body>
+
+</html>
