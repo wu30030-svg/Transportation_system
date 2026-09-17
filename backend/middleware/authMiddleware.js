@@ -126,6 +126,45 @@ async function authenticateToken(req, res, next) {
     }
 }
 
+async function authenticateWebSocketToken(token) {
+
+    if (!token) {
+        throw new Error("Authentication required");
+    }
+
+    const decoded =
+        jwt.verify(
+            token,
+            process.env.JWT_SECRET
+        );
+
+    if (!decoded.session_id) {
+        throw new Error("Invalid session");
+    }
+
+    const activeSession =
+        await authRepository
+            .findActiveSessionBySessionId(
+                decoded.session_id
+            );
+
+    if (!activeSession) {
+        throw new Error(
+            "Session expired or logged out"
+        );
+    }
+
+    if (
+        activeSession.user_id !==
+        decoded.user_id
+    ) {
+        throw new Error("Invalid session");
+    }
+
+    return decoded;
+}
+
 module.exports = {
-    authenticateToken
+    authenticateToken,
+    authenticateWebSocketToken
 };
