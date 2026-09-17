@@ -1,9 +1,30 @@
 ﻿const express = require("express");
 
 const authController = require("../controllers/authController");
+const { authenticateToken } = require("../../../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.post("/login", authController.login);
+
+// ========================================
+// Login
+// ========================================
+
+router.post(
+    "/login",
+    authController.login
+);
+
+
+// ========================================
+// Logout
+// ========================================
+
+router.post(
+    "/logout",
+    authenticateToken,
+    authController.logout
+);
+
 
 module.exports = router;

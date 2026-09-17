@@ -110,6 +110,25 @@ async function refreshShuttleLocations() {
         const data = await response.json();
 
 
+        if (response.status === 401) {
+
+            console.warn(
+                "[Shuttle Monitor] Token 已失效"
+            );
+
+            if (
+                typeof handleUnauthorized ===
+                "function"
+            ) {
+
+                handleUnauthorized();
+
+            }
+
+            return;
+        }
+
+
         if (!response.ok) {
 
             throw new Error(

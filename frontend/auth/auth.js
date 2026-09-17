@@ -148,29 +148,102 @@ function getCurrentUser() {
 
 }
 
-
 // ========================================
 // Logout
 // ========================================
 
-function logout() {
+async function logout() {
 
-    localStorage.removeItem(
-        "mission_center_token"
-    );
+    const token =
+        getAuthToken();
+
+    try {
+
+        if (token) {
+
+            const response =
+                await fetch(
+                    `${AUTH_API_BASE}/logout`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Authorization":
+                                `Bearer ${token}`
+                        }
+                    }
+                );
 
 
-    localStorage.removeItem(
-        "mission_center_user"
-    );
+            if (!response.ok) {
+
+                console.warn(
+                    "[Auth] Backend Logout 回應:",
+                    response.status
+                );
+
+            }
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "[Auth] Backend Logout 失敗:",
+            error
+        );
+
+    } finally {
+
+        localStorage.removeItem(
+            "mission_center_token"
+        );
 
 
-    console.log(
-        "[Auth] 已登出。"
-    );
+        localStorage.removeItem(
+            "mission_center_user"
+        );
 
+
+        console.log(
+            "[Auth] 已登出。"
+        );
+
+    }
 }
 
+// ========================================
+// Unauthorized / Token Expired
+// ========================================
+
+function handleUnauthorized() {
+
+    console.warn(
+        "[Auth] Token 已失效，準備登出。"
+    );
+
+    logout();
+
+    const currentPath =
+        window.location.pathname;
+
+    // Shuttle 頁面
+    if (
+        currentPath.includes("/shuttle/")
+    ) {
+
+        window.location.href =
+            "../index.html";
+
+        return;
+
+    }
+
+    // 一般 Mission Center
+    window.location.href =
+        "./index.html";
+
+}
 
 // ========================================
 // Authentication State
@@ -201,6 +274,9 @@ window.logout =
 
 window.isAuthenticated =
     isAuthenticated;
+
+window.handleUnauthorized =
+    handleUnauthorized;
 
 // ========================================
 // User Session UI
@@ -255,9 +331,9 @@ function updateUserSessionUI() {
 // Logout UI
 // ========================================
 
-function handleLogout() {
+async function handleLogout() {
 
-    logout();
+    await logout();
 
     const loginScreen =
         document.getElementById(
