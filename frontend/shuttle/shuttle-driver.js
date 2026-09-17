@@ -162,7 +162,7 @@ if (logoutButton) {
 
     logoutButton.addEventListener(
         "click",
-        () => {
+        async () => {
 
             // 停止 GPS 追蹤
             if (gpsWatchId !== null) {
@@ -176,7 +176,7 @@ if (logoutButton) {
             }
 
             // 清除登入狀態
-            logout();
+            await logout();
 
             // 回到登入頁
             window.location.href =

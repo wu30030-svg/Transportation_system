@@ -392,7 +392,7 @@ if (logoutButton) {
 
     logoutButton.addEventListener(
         "click",
-        () => {
+        async () => {
 
             if (shuttleRefreshTimer) {
 
@@ -404,7 +404,7 @@ if (logoutButton) {
 
             }
 
-            logout();
+            await logout();
 
             window.location.href =
                 "../index.html";

@@ -216,13 +216,13 @@ async function logout() {
 // Unauthorized / Token Expired
 // ========================================
 
-function handleUnauthorized() {
+async function handleUnauthorized() {
 
     console.warn(
         "[Auth] Token 已失效，準備登出。"
     );
 
-    logout();
+    await logout();
 
     const currentPath =
         window.location.pathname;
@@ -242,7 +242,6 @@ function handleUnauthorized() {
     // 一般 Mission Center
     window.location.href =
         "./index.html";
-
 }
 
 // ========================================
@@ -545,15 +544,6 @@ function initializeLoginUI() {
                     return;
 
                 }
-
-
-                // ========================================
-                // Mission Center
-                // ========================================
-
-                console.log(
-                    "[Auth] → Mission Center"
-                );
 
 
                 // ========================================
