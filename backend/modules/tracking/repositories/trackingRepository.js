@@ -296,6 +296,7 @@ async function findCurrentShuttleLocations(
             ON u.id = p.user_id
 
         WHERE u.access_context = $1
+          AND sl.updated_at >= NOW() - INTERVAL '30 seconds'
 
         ORDER BY
             p.personnel_number ASC;
