@@ -152,7 +152,7 @@ async function login(username, password) {
 
     const identity = {
 
-        user_id: user.user_id,
+        user_id: user.id,
 
         username: user.username,
 
