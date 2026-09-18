@@ -143,10 +143,20 @@ async function authenticateWebSocketToken(token) {
     }
 
     /*
-     * JWT 的 decoded.user_id 是 public UUID
+     * JWT 的 decoded.user_id
+     * 必須對應 users.id。
      *
-     * 例如：
-     * 1e7dd38a-2545-4b6f-837b-20b6393dfb03
+     * WebSocket 驗證流程：
+     *
+     * decoded.user_id
+     *        ↓
+     * users.id
+     *
+     * activeSession.user_id
+     *        ↓
+     * users.id
+     *
+     * 兩者應該相同。
      */
     const user =
         await authRepository.findUserById(
@@ -158,8 +168,11 @@ async function authenticateWebSocketToken(token) {
     }
 
     /*
-     * user_sessions.user_id 對應的是
-     * users.id，也就是 internal integer ID。
+     * user_sessions.user_id 對應 users.id。
+     *
+     * 注意：
+     * users.id 的實際型別依目前資料庫 Schema 為準，
+     * 不在 Middleware 內假設一定是 integer。
      */
     const activeSession =
         await authRepository
@@ -199,8 +212,8 @@ async function authenticateWebSocketToken(token) {
      * users.id
      */
     if (
-        Number(activeSession.user_id) !==
-        Number(user.id)
+        String(activeSession.user_id) !==
+        String(user.id)
     ) {
 
         console.error(
