@@ -166,7 +166,21 @@ async function authenticateWebSocketToken(token) {
             .findActiveSessionBySessionId(
                 decoded.session_id
             );
+    console.log(
+        "[WebSocket Auth] decoded:",
+        {
+            user_id: decoded.user_id,
+            session_id: decoded.session_id
+        }
+    );
 
+    console.log(
+        "[WebSocket Auth] activeSession:",
+        {
+            user_id: activeSession?.user_id,
+            session_id: activeSession?.session_id
+        }
+    );
     if (!activeSession) {
         throw new Error(
             "Session expired or logged out"
@@ -188,6 +202,16 @@ async function authenticateWebSocketToken(token) {
         Number(activeSession.user_id) !==
         Number(user.id)
     ) {
+
+        console.error(
+            "[WebSocket Auth] User ID mismatch:",
+            {
+                sessionUserId: activeSession.user_id,
+                userId: user.id,
+                decodedUserId: decoded.user_id
+            }
+        );
+
         throw new Error("Invalid session");
     }
 

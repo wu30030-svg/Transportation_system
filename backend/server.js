@@ -690,6 +690,10 @@ wss.on("connection", (socket) => {
                 "[WebSocket] Message Error:",
                 error.message
             );
+            console.error(
+                "[WebSocket] Message Error Stack:",
+                error.stack
+            );
 
             socket.send(
                 JSON.stringify({
