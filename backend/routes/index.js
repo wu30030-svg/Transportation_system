@@ -104,5 +104,4 @@ router.use(
     require("../modules/mission/routes/missionVehicleAssignments")
 );
 
-
 module.exports = router;

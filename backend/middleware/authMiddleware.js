@@ -161,7 +161,39 @@ async function authenticateWebSocketToken(token) {
         throw new Error("Invalid session");
     }
 
-    return decoded;
+    const user =
+        await authRepository.findUserByPublicUserId(
+            decoded.user_id
+        );
+
+    if (!user) {
+        throw new Error("User not found");
+    }
+
+    return {
+        ...decoded,
+
+        user_id:
+            user.user_id,
+
+        username:
+            user.username,
+
+        role_id:
+            user.role_id,
+
+        access_context:
+            user.access_context || null,
+
+        personnel_id:
+            user.personnel_id || null,
+
+        personnel_number:
+            user.personnel_number || null,
+
+        personnel_name:
+            user.personnel_name || null
+    };
 }
 
 module.exports = {

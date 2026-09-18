@@ -74,6 +74,46 @@ async function findUserById(userId) {
 }
 
 // ========================================
+// Find User By Public User ID
+// ========================================
+
+async function findUserByPublicUserId(userId) {
+
+    const query = `
+        SELECT
+            u.id,
+            u.user_id,
+            u.username,
+            u.name,
+            u.role_id,
+            u.access_context,
+            u.remark,
+            u.is_active,
+
+            p.id AS personnel_id,
+            p.personnel_number,
+            p.name AS personnel_name,
+            p.status AS personnel_status
+
+        FROM users u
+
+        LEFT JOIN personnel p
+            ON p.user_id = u.id
+
+        WHERE u.user_id = $1
+        LIMIT 1;
+    `;
+
+    const result =
+        await pool.query(
+            query,
+            [userId]
+        );
+
+    return result.rows[0] || null;
+}
+
+// ========================================
 // Find Active Session By User ID
 // ========================================
 
@@ -180,6 +220,7 @@ async function findActiveSessionBySessionId(sessionId) {
 module.exports = {
     findUserByUsername,
     findUserById,
+    findUserByPublicUserId,
     findActiveSessionByUserId,
     createSession,
     deleteSession,

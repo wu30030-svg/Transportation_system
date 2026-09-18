@@ -239,8 +239,66 @@ async function logout(sessionId) {
     );
 }
 
+// ========================================
+// Force Logout By Username
+// ========================================
+
+async function forceLogout(username) {
+
+    if (!username || username.trim() === "") {
+
+        const error =
+            new Error("Username is required");
+
+        error.statusCode = 400;
+
+        throw error;
+    }
+
+    const user =
+        await authRepository.findUserByUsername(
+            username.trim()
+        );
+
+    if (!user) {
+
+        const error =
+            new Error("User not found");
+
+        error.statusCode = 404;
+
+        throw error;
+    }
+
+    const activeSession =
+        await authRepository.findActiveSessionByUserId(
+            user.id
+        );
+
+    if (!activeSession) {
+
+        return {
+            username: user.username,
+            user_id: user.user_id,
+            session_id: null,
+            had_session: false
+        };
+    }
+
+    await authRepository.deleteSession(
+        activeSession.session_id
+    );
+
+    return {
+        username: user.username,
+        user_id: user.user_id,
+        session_id: activeSession.session_id,
+        had_session: true
+    };
+}
 
 module.exports = {
     login,
-    logout
+    logout,
+    forceLogout
 };

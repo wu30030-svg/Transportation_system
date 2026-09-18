@@ -9,12 +9,16 @@ const crypto = require("crypto");
 const { WebSocketServer } = require("ws");
 
 const {
+    authenticateToken,
     authenticateWebSocketToken
 } = require("./middleware/authMiddleware");
 
 const {
     canCall
 } = require("./services/callPermissionService");
+
+const authService =
+    require("./modules/auth/services/authService");
 
 const app = express();
 
@@ -55,101 +59,142 @@ const onlineUsers = new Map();
 const activeCalls = new Map();
 
 // ========================================
-// Temporary Force Logout
+// Broadcast Online Users
 // ========================================
 
-app.post("/api/debug/force-logout/:username", (req, res) => {
+function broadcastOnlineUsers() {
 
-    const username = req.params.username;
+    const users = [];
 
-    let targetSocket = null;
-    let targetUserId = null;
-
-    for (const [userId, socket] of onlineUsers.entries()) {
+    for (const [
+        userId,
+        userSocket
+    ] of onlineUsers.entries()) {
 
         if (
-            socket.user &&
-            socket.user.username === username
+            userSocket.readyState !== 1 ||
+            !userSocket.user
         ) {
-            targetSocket = socket;
-            targetUserId = userId;
-            break;
+            continue;
         }
-    }
 
-    if (!targetSocket) {
+        users.push({
+            user_id:
+                userSocket.user.user_id,
 
-        return res.status(404).json({
-            success: false,
-            message: "User is not online"
+            username:
+                userSocket.user.username,
+
+            role_id:
+                userSocket.user.role_id,
+
+            access_context:
+                userSocket.user.access_context,
+
+            personnel_id:
+                userSocket.user.personnel_id,
+
+            personnel_number:
+                userSocket.user.personnel_number,
+
+            personnel_name:
+                userSocket.user.personnel_name
         });
     }
 
-    /*
-     * 找出與這個使用者相關的進行中通話
-     */
 
-    for (const [callId, call] of activeCalls.entries()) {
+    for (const userSocket of onlineUsers.values()) {
 
         if (
-            call.callerUserId === targetUserId ||
-            call.targetUserId === targetUserId
+            userSocket.readyState !== 1 ||
+            !userSocket.user
         ) {
-
-            const otherUserId =
-                call.callerUserId === targetUserId
-                    ? call.targetUserId
-                    : call.callerUserId;
-
-            const otherSocket =
-                onlineUsers.get(otherUserId);
-
-            if (
-                otherSocket &&
-                otherSocket.readyState === 1
-            ) {
-
-                otherSocket.send(
-                    JSON.stringify({
-                        type: "call:ended",
-                        call_id: callId,
-                        reason: "USER_FORCE_LOGOUT"
-                    })
-                );
-            }
-
-            activeCalls.delete(callId);
+            continue;
         }
-    }
 
-    /*
-     * 通知前端：被強制登出
-     */
-
-    if (targetSocket.readyState === 1) {
-
-        targetSocket.send(
+        userSocket.send(
             JSON.stringify({
-                type: "auth:force-logout",
-                reason: "FORCE_LOGOUT"
+                type: "online:list",
+                users
             })
         );
-
-        targetSocket.close();
     }
 
-    onlineUsers.delete(targetUserId);
+}
 
-    console.log(
-        "[Force Logout]:",
-        username
-    );
+// ========================================
+// Temporary Force Logout
+// ========================================
 
-    return res.json({
-        success: true,
-        username,
-        user_id: targetUserId
-    });
+app.post("/api/auth/force-logout/:username", authenticateToken, async (req, res) => {
+
+    try {
+
+        const username =
+            req.params.username;
+
+        const result =
+            await authService.forceLogout(
+                username
+            );
+
+        const targetUserId =
+            result.user_id;
+
+        const targetSocket =
+            onlineUsers.get(targetUserId);
+
+        // 如果 WebSocket 在線，通知前端並斷線
+        if (
+            targetSocket &&
+            targetSocket.readyState === 1
+        ) {
+
+            targetSocket.send(
+                JSON.stringify({
+                    type: "auth:force-logout",
+                    reason: "FORCE_LOGOUT"
+                })
+            );
+
+            targetSocket.close();
+
+            onlineUsers.delete(targetUserId);
+        }
+
+        console.log(
+            "[Force Logout]:",
+            result.username,
+            "| had_session:",
+            result.had_session,
+            "| websocket:",
+            Boolean(targetSocket)
+        );
+
+        return res.json({
+            success: true,
+            username: result.username,
+            user_id: result.user_id,
+            had_session: result.had_session,
+            websocket_online: Boolean(targetSocket)
+        });
+
+    } catch (error) {
+
+        console.error(
+            "[Force Logout] Error:",
+            error
+        );
+
+        return res.status(
+            error.statusCode || 500
+        ).json({
+            success: false,
+            message:
+                error.message ||
+                "Force logout failed"
+        });
+    }
 });
 
 wss.on("connection", (socket) => {
@@ -191,6 +236,21 @@ wss.on("connection", (socket) => {
                     socket
                 );
 
+                console.log(
+                    "[WebSocket] Online users:",
+                    [...onlineUsers.entries()].map(
+                        ([userId, userSocket]) => ({
+                            user_id: userId,
+                            username:
+                                userSocket.user?.username,
+                            role_id:
+                                userSocket.user?.role_id,
+                            access_context:
+                                userSocket.user?.access_context
+                        })
+                    )
+                );
+
                 socket.send(
                     JSON.stringify({
                         type: "auth:success",
@@ -201,10 +261,15 @@ wss.on("connection", (socket) => {
                             access_context:
                                 user.access_context,
                             personnel_id:
-                                user.personnel_id
+                                user.personnel_id,
+                            personnel_number:
+                                user.personnel_number,
+                            personnel_name:
+                                user.personnel_name
                         }
                     })
                 );
+                broadcastOnlineUsers();
 
                 console.log(
                     "[WebSocket] Authenticated:",
@@ -259,7 +324,13 @@ wss.on("connection", (socket) => {
                             userSocket.user.access_context,
 
                         personnel_id:
-                            userSocket.user.personnel_id
+                            userSocket.user.personnel_id,
+
+                        personnel_number:
+                            userSocket.user.personnel_number,
+
+                        personnel_name:
+                            userSocket.user.personnel_name
                     });
                 }
 
@@ -280,6 +351,27 @@ wss.on("connection", (socket) => {
 
                 const targetSocket =
                     onlineUsers.get(targetUserId);
+
+                console.log(
+                    "[Call] Target lookup:",
+                    {
+                        targetUserId,
+                        targetFound: Boolean(targetSocket),
+                        targetSocketReadyState:
+                            targetSocket?.readyState,
+                        onlineUsers: [
+                            ...onlineUsers.entries()
+                        ].map(
+                            ([userId, userSocket]) => ({
+                                userId,
+                                username:
+                                    userSocket.user?.username,
+                                readyState:
+                                    userSocket.readyState
+                            })
+                        )
+                    }
+                );
 
                 // 目標不在線
                 if (
@@ -618,20 +710,46 @@ wss.on("connection", (socket) => {
 
         if (socket.user?.user_id) {
 
-            onlineUsers.delete(
-                socket.user.user_id
-            );
+            const currentSocket =
+                onlineUsers.get(
+                    socket.user.user_id
+                );
 
-            console.log(
-                "[WebSocket] Removed online user:",
-                socket.user.username
-            );
+            /*
+             * 只有當目前 onlineUsers 裡的 Socket
+             * 就是這個正在關閉的 Socket 時，
+             * 才允許移除。
+             *
+             * 避免舊 Socket 的 close event
+             * 把新建立的 Socket 刪掉。
+             */
+
+            if (currentSocket === socket) {
+
+                onlineUsers.delete(
+                    socket.user.user_id
+                );
+
+                console.log(
+                    "[WebSocket] Removed online user:",
+                    socket.user.username
+                );
+
+                broadcastOnlineUsers();
+
+            } else {
+
+                console.log(
+                    "[WebSocket] Old socket closed, keep current socket:",
+                    socket.user.username
+                );
+
+            }
         }
 
         console.log(
             "[WebSocket] Client disconnected"
         );
-
     });
 
     socket.on("error", (error) => {

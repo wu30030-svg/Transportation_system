@@ -9,6 +9,7 @@ const SHUTTLE_LOCATION_API =
 
 const SHUTTLE_REFRESH_INTERVAL = 5000;
 
+
 // ========================================
 // State
 // ========================================
@@ -19,21 +20,32 @@ const shuttleMarkers = new Map();
 
 let shuttleRefreshTimer = null;
 
+
+// ========================================
+// WebSocket State
+// ========================================
+
+let shuttleWebSocket = null;
+
+let shuttleOnlineUsers = [];
+
+
 // ========================================
 // Map Initialization
 // ========================================
 
 async function initShuttleMap() {
 
-
     if (shuttleMap) {
         return;
     }
 
     if (!window.google || !google.maps) {
+
         console.error(
             "[Shuttle Monitor] Google Maps 尚未載入"
         );
+
         return;
     }
 
@@ -53,7 +65,6 @@ async function initShuttleMap() {
             mapTypeControl: false,
             streetViewControl: false,
             fullscreenControl: true,
-
             gestureHandling: "greedy"
         }
     );
@@ -69,16 +80,235 @@ async function initShuttleMap() {
             refreshShuttleLocations,
             SHUTTLE_REFRESH_INTERVAL
         );
-
-
 }
+
+
+// ========================================
+// WebSocket Connection
+// ========================================
+
+function connectShuttleWebSocket() {
+
+    const token = getAuthToken();
+
+    if (!token) {
+
+        console.error(
+            "[Shuttle WebSocket] 沒有登入 Token"
+        );
+
+        return;
+    }
+
+    if (
+        shuttleWebSocket &&
+        (
+            shuttleWebSocket.readyState ===
+            WebSocket.OPEN ||
+            shuttleWebSocket.readyState ===
+            WebSocket.CONNECTING
+        )
+    ) {
+
+        return;
+    }
+
+    const wsBaseUrl =
+        CONFIG.API_BASE_URL.replace(
+            /^http/,
+            "ws"
+        );
+
+    const wsUrl =
+        `${wsBaseUrl}/ws`;
+
+    console.log(
+        "[Shuttle WebSocket] Connecting:",
+        wsUrl
+    );
+
+    shuttleWebSocket =
+        new WebSocket(wsUrl);
+
+
+    // ========================================
+    // Connected
+    // ========================================
+
+    shuttleWebSocket.addEventListener(
+        "open",
+        () => {
+
+            console.log(
+                "[Shuttle WebSocket] Connected"
+            );
+
+            shuttleWebSocket.send(
+                JSON.stringify({
+                    type: "auth",
+                    token
+                })
+            );
+
+        }
+    );
+
+
+    // ========================================
+    // Message
+    // ========================================
+
+    shuttleWebSocket.addEventListener(
+        "message",
+        event => {
+
+            try {
+
+                const data =
+                    JSON.parse(
+                        event.data
+                    );
+
+                console.log(
+                    "[Shuttle WebSocket] <= ",
+                    data
+                );
+
+                handleShuttleWebSocketMessage(
+                    data
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "[Shuttle WebSocket] 訊息解析失敗:",
+                    error
+                );
+
+            }
+
+        }
+    );
+
+
+    // ========================================
+    // Error
+    // ========================================
+
+    shuttleWebSocket.addEventListener(
+        "error",
+        error => {
+
+            console.error(
+                "[Shuttle WebSocket] Error:",
+                error
+            );
+
+        }
+    );
+
+
+    // ========================================
+    // Close
+    // ========================================
+
+    shuttleWebSocket.addEventListener(
+        "close",
+        () => {
+
+            console.log(
+                "[Shuttle WebSocket] Closed"
+            );
+
+            shuttleWebSocket = null;
+
+        }
+    );
+}
+
+
+// ========================================
+// WebSocket Message Handler
+// ========================================
+
+function handleShuttleWebSocketMessage(data) {
+
+    // ========================================
+    // Authentication Success
+    // ========================================
+
+    if (data.type === "auth:success") {
+
+        console.log(
+            "[Shuttle WebSocket] Authentication success:",
+            data.user
+        );
+
+        shuttleWebSocket.send(
+            JSON.stringify({
+                type: "online:list"
+            })
+        );
+
+        return;
+    }
+
+
+    // ========================================
+    // Online User List
+    // ========================================
+
+    if (data.type === "online:list") {
+
+        shuttleOnlineUsers =
+            Array.isArray(data.users)
+                ? data.users
+                : [];
+
+        console.log(
+            "[Shuttle WebSocket] Online users:",
+            shuttleOnlineUsers
+        );
+
+
+        // WebSocket 在線名單更新後
+        // 立即重新整理通訊面板
+
+        renderCommunicationPanel();
+
+        return;
+    }
+
+
+    // ========================================
+    // Force Logout
+    // ========================================
+
+    if (data.type === "auth:force-logout") {
+
+        console.warn(
+            "[Shuttle WebSocket] 收到強制登出"
+        );
+
+        if (
+            typeof handleUnauthorized ===
+            "function"
+        ) {
+
+            handleUnauthorized();
+
+        }
+
+        return;
+    }
+}
+
 
 // ========================================
 // Fetch Shuttle Locations
 // ========================================
 
 async function refreshShuttleLocations() {
-
 
     const token = getAuthToken();
 
@@ -90,7 +320,6 @@ async function refreshShuttleLocations() {
 
         return;
     }
-
 
     try {
 
@@ -106,9 +335,8 @@ async function refreshShuttleLocations() {
             }
         );
 
-
-        const data = await response.json();
-
+        const data =
+            await response.json();
 
         if (response.status === 401) {
 
@@ -128,7 +356,6 @@ async function refreshShuttleLocations() {
             return;
         }
 
-
         if (!response.ok) {
 
             throw new Error(
@@ -137,19 +364,18 @@ async function refreshShuttleLocations() {
             );
         }
 
-
         const locations =
             Array.isArray(data.data)
                 ? data.data
                 : [];
 
-
         console.log(
             `[Shuttle Monitor] 收到 ${locations.length} 筆定位資料`
         );
 
-
-        renderARouteLocations(locations);
+        renderARouteLocations(
+            locations
+        );
 
     } catch (error) {
 
@@ -158,8 +384,8 @@ async function refreshShuttleLocations() {
             error
         );
     }
-
 }
+
 
 // ========================================
 // Render A Route
@@ -167,7 +393,8 @@ async function refreshShuttleLocations() {
 
 function renderARouteLocations(locations) {
 
-    const currentIds = new Set();
+    const currentIds =
+        new Set();
 
     locations.forEach(location => {
 
@@ -175,15 +402,20 @@ function renderARouteLocations(locations) {
             location.personnel_number;
 
         if (
-            typeof personnelNumber !== "string"
+            typeof personnelNumber !==
+            "string"
         ) {
+
             return;
         }
 
         if (
-            typeof location.latitude !== "number" ||
-            typeof location.longitude !== "number"
+            typeof location.latitude !==
+            "number" ||
+            typeof location.longitude !==
+            "number"
         ) {
+
             return;
         }
 
@@ -199,15 +431,12 @@ function renderARouteLocations(locations) {
 
     });
 
-    /*
-     * 移除這次 API 沒有回傳的車輛 Marker。
-     *
-     * 目前不判斷「在線 / 離線」，
-     * 只是讓地圖保持與目前資料一致。
-     */
 
     shuttleMarkers.forEach(
-        (marker, personnelNumber) => {
+        (
+            marker,
+            personnelNumber
+        ) => {
 
             if (
                 !currentIds.has(
@@ -221,9 +450,11 @@ function renderARouteLocations(locations) {
                     personnelNumber
                 );
             }
+
         }
     );
 }
+
 
 // ========================================
 // Create / Update Marker
@@ -235,18 +466,15 @@ function updateShuttleMarker(
     longitude
 ) {
 
-
     const position = {
         lat: latitude,
         lng: longitude
     };
 
-
     let marker =
         shuttleMarkers.get(
             personnelNumber
         );
-
 
     if (!marker) {
 
@@ -264,11 +492,10 @@ function updateShuttleMarker(
         return;
     }
 
-
-    marker.position = position;
-
-
+    marker.position =
+        position;
 }
+
 
 // ========================================
 // Create Shuttle Marker
@@ -279,31 +506,32 @@ function createShuttleMarker(
     position
 ) {
 
-
     const markerElement =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     markerElement.className =
         "shuttle-marker";
 
 
     const dot =
-        document.createElement("span");
+        document.createElement(
+            "span"
+        );
 
     dot.className =
         "shuttle-dot";
 
 
     const label =
-        document.createElement("span");
+        document.createElement(
+            "span"
+        );
 
     label.className =
         "shuttle-label";
 
-
-    /*
-     * 直接使用 Backend 回傳的車輛識別編號
-     */
 
     const vehicleNumber =
         personnelNumber;
@@ -312,8 +540,13 @@ function createShuttleMarker(
         vehicleNumber;
 
 
-    markerElement.appendChild(dot);
-    markerElement.appendChild(label);
+    markerElement.appendChild(
+        dot
+    );
+
+    markerElement.appendChild(
+        label
+    );
 
 
     const marker =
@@ -324,18 +557,591 @@ function createShuttleMarker(
             title: vehicleNumber
         });
 
-
     return marker;
+}
 
+
+// ========================================
+// Communication
+// ========================================
+
+function getOnlineDrivers() {
+
+    /*
+     * 目前監控端自己是 role 6。
+     *
+     * 通訊名單只顯示：
+     *
+     * role_id = 4
+     * 同 access_context
+     */
+
+    const currentUser =
+        shuttleOnlineUsers.find(
+            user =>
+                Number(user.role_id) === 6
+        );
+
+
+    if (!currentUser) {
+
+        return shuttleOnlineUsers.filter(
+            user =>
+                Number(user.role_id) === 4
+        );
+    }
+
+
+    return shuttleOnlineUsers.filter(
+        user =>
+            Number(user.role_id) === 4 &&
+            user.access_context ===
+            currentUser.access_context
+    );
+}
+
+
+// ========================================
+// Render Communication Panel
+// ========================================
+
+function renderCommunicationPanel() {
+
+    const communicationList =
+        document.querySelector(
+            ".communication-list"
+        );
+
+
+    /*
+     * 如果目前沒有開啟「通訊」面板，
+     * 不需要立即操作畫面。
+     *
+     * 下一次開啟面板時，
+     * openBottomPanel() 會使用最新資料。
+     */
+
+    if (!communicationList) {
+
+        return;
+    }
+
+
+    const drivers =
+        getOnlineDrivers();
+
+
+    if (drivers.length === 0) {
+
+        communicationList.innerHTML = `
+
+            <div class="communication-empty">
+
+                <div class="communication-empty-title">
+                    目前沒有在線駕駛
+                </div>
+
+                <div class="communication-empty-text">
+                    等待駕駛登入接駁車勤務
+                </div>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    communicationList.innerHTML =
+        drivers.map(
+            driver => {
+
+                const personnelName =
+                    driver.personnel_name ||
+                    driver.username ||
+                    "未設定姓名";
+
+                const personnelNumber =
+                    driver.personnel_number ||
+                    "未設定編號";
+
+                const accessContext =
+                    driver.access_context ||
+                    "未設定勤務區域";
+
+                const userId =
+                    driver.user_id || "";
+
+
+                return `
+
+                    <div
+                        class="communication-item"
+                        data-user-id="${escapeHtml(userId)}"
+                    >
+
+                        <div class="communication-person">
+
+                            <div class="communication-status-dot"></div>
+
+                            <div class="communication-person-info">
+
+                                <div class="communication-person-name">
+                                    ${escapeHtml(personnelName)}
+                                </div>
+
+                                <div class="communication-person-number">
+                                    ${escapeHtml(personnelNumber)}
+                                </div>
+
+                                <div class="communication-person-context">
+                                    ${escapeHtml(accessContext)}
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            class="communication-call-button"
+                            data-user-id="${escapeHtml(userId)}"
+                        >
+                            呼叫
+                        </button>
+
+                    </div>
+
+                `;
+
+            }
+        ).join("");
+
+
+    bindCommunicationCallButtons();
+}
+
+
+// ========================================
+// Escape HTML
+// ========================================
+
+function escapeHtml(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+// ========================================
+// Communication Call Buttons
+// ========================================
+
+function bindCommunicationCallButtons() {
+
+    document
+        .querySelectorAll(
+            ".communication-call-button"
+        )
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                event => {
+
+                    event.stopPropagation();
+
+                    const targetUserId =
+                        button.dataset.userId;
+
+                    console.log(
+                        "[Shuttle Communication] 發起呼叫:",
+                        targetUserId
+                    );
+
+
+                    /*
+                     * 確認 WebSocket
+                     */
+
+                    if (
+                        !shuttleWebSocket ||
+                        shuttleWebSocket.readyState !== WebSocket.OPEN
+                    ) {
+
+                        console.warn(
+                            "[Shuttle Communication] WebSocket 尚未連線"
+                        );
+
+                        return;
+                    }
+
+
+                    /*
+                     * 發送通話請求
+                     */
+
+                    shuttleWebSocket.send(
+                        JSON.stringify({
+                            type: "call",
+                            target_user_id: targetUserId
+                        })
+                    );
+
+
+                    console.log(
+                        "[Shuttle Communication] call 已送出:",
+                        targetUserId
+                    );
+
+                }
+            );
+
+        });
+}
+
+// ========================================
+// Bottom UI
+// ========================================
+
+let activeBottomPanel = null;
+
+const bottomUI =
+    document.getElementById(
+        "bottom-ui"
+    );
+
+const bottomSheet =
+    document.getElementById(
+        "bottom-sheet"
+    );
+
+const bottomSheetContent =
+    document.getElementById(
+        "bottom-sheet-content"
+    );
+
+const bottomNavigation =
+    document.getElementById(
+        "bottom-navigation"
+    );
+
+
+// ========================================
+// Bottom Panel Content
+// ========================================
+
+const bottomPanelContents = {
+
+    vehicles: {
+
+        title: "車輛",
+
+        html: `
+
+            <div class="bottom-panel-empty">
+
+                <div class="bottom-panel-empty-title">
+                    車輛
+                </div>
+
+                <div class="bottom-panel-empty-text">
+                    車輛資訊將顯示於此
+                </div>
+
+            </div>
+
+        `
+
+    },
+
+
+    monitoring: {
+
+        title: "監控",
+
+        html: `
+
+            <div class="bottom-panel-empty">
+
+                <div class="bottom-panel-empty-title">
+                    監控
+                </div>
+
+                <div class="bottom-panel-empty-text">
+                    監控資訊將顯示於此
+                </div>
+
+            </div>
+
+        `
+
+    },
+
+
+    communication: {
+
+        title: "通訊",
+
+        html: `
+
+            <div class="bottom-panel-header">
+
+                <div>
+
+                    <div class="bottom-panel-title">
+                        通訊
+                    </div>
+
+                    <div class="bottom-panel-subtitle">
+                        線上駕駛
+                    </div>
+
+                </div>
+
+                <div class="bottom-panel-status">
+                    ONLINE
+                </div>
+
+            </div>
+
+
+            <div class="communication-list">
+
+                <div class="communication-empty">
+
+                    <div class="communication-empty-title">
+                        正在取得在線駕駛
+                    </div>
+
+                    <div class="communication-empty-text">
+                        WebSocket 連線中
+                    </div>
+
+                </div>
+
+            </div>
+
+        `
+
+    },
+
+
+    other: {
+
+        title: "其他",
+
+        html: `
+
+            <div class="bottom-panel-empty">
+
+                <div class="bottom-panel-empty-title">
+                    其他
+                </div>
+
+                <div class="bottom-panel-empty-text">
+                    其他功能將顯示於此
+                </div>
+
+            </div>
+
+        `
+
+    }
+
+};
+
+
+// ========================================
+// Open Bottom Panel
+// ========================================
+
+function openBottomPanel(panelName) {
+
+    const panel =
+        bottomPanelContents[panelName];
+
+    if (!panel) {
+
+        return;
+    }
+
+
+    if (
+        activeBottomPanel ===
+        panelName
+    ) {
+
+        closeBottomPanel();
+
+        return;
+    }
+
+
+    activeBottomPanel =
+        panelName;
+
+
+    bottomSheetContent.innerHTML =
+        panel.html;
+
+
+    bottomUI.classList.add(
+        "expanded"
+    );
+
+
+    document
+        .querySelectorAll(
+            ".bottom-nav-item"
+        )
+        .forEach(button => {
+
+            button.classList.toggle(
+                "active",
+                button.dataset.panel ===
+                panelName
+            );
+
+        });
+
+
+    /*
+     * 如果打開的是通訊，
+     * 立刻用目前最新的 WebSocket
+     * 名單產生駕駛列表。
+     */
+
+    if (
+        panelName ===
+        "communication"
+    ) {
+
+        renderCommunicationPanel();
+    }
+}
+
+
+// ========================================
+// Close Bottom Panel
+// ========================================
+
+function closeBottomPanel() {
+
+    activeBottomPanel =
+        null;
+
+
+    bottomUI.classList.remove(
+        "expanded"
+    );
+
+
+    document
+        .querySelectorAll(
+            ".bottom-nav-item"
+        )
+        .forEach(button => {
+
+            button.classList.remove(
+                "active"
+            );
+
+        });
 
 }
+
+
+// ========================================
+// Bottom Navigation Events
+// ========================================
+
+if (bottomNavigation) {
+
+    bottomNavigation
+        .querySelectorAll(
+            ".bottom-nav-item"
+        )
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                event => {
+
+                    event.stopPropagation();
+
+                    const panelName =
+                        button.dataset.panel;
+
+                    openBottomPanel(
+                        panelName
+                    );
+
+                }
+            );
+
+        });
+
+}
+
+
+// ========================================
+// Click Map → Close Bottom Panel
+// ========================================
+
+const mapSection =
+    document.querySelector(
+        ".map-section"
+    );
+
+if (mapSection) {
+
+    mapSection.addEventListener(
+        "click",
+        () => {
+
+            if (activeBottomPanel) {
+
+                closeBottomPanel();
+
+            }
+
+        }
+    );
+
+}
+
+
+// ========================================
+// Prevent Bottom Sheet Click
+// from Closing Itself
+// ========================================
+
+if (bottomSheet) {
+
+    bottomSheet.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+        }
+    );
+
+}
+
 
 // ========================================
 // Start
 // ========================================
 
 function waitForGoogleMaps() {
-
 
     if (
         window.google &&
@@ -348,16 +1154,16 @@ function waitForGoogleMaps() {
         return;
     }
 
-
     setTimeout(
         waitForGoogleMaps,
         100
     );
-
-
 }
 
 waitForGoogleMaps();
+
+connectShuttleWebSocket();
+
 
 // ========================================
 // Cleanup
@@ -366,7 +1172,6 @@ waitForGoogleMaps();
 window.addEventListener(
     "beforeunload",
     () => {
-
 
         if (shuttleRefreshTimer) {
 
@@ -377,16 +1182,26 @@ window.addEventListener(
             shuttleRefreshTimer = null;
         }
 
+
+        if (shuttleWebSocket) {
+
+            shuttleWebSocket.close();
+
+            shuttleWebSocket = null;
+        }
+
     }
-
-
 );
+
+
 // ========================================
 // Logout
 // ========================================
 
 const logoutButton =
-    document.getElementById("logout-btn");
+    document.getElementById(
+        "logout-btn"
+    );
 
 if (logoutButton) {
 
@@ -401,10 +1216,19 @@ if (logoutButton) {
                 );
 
                 shuttleRefreshTimer = null;
-
             }
 
+
+            if (shuttleWebSocket) {
+
+                shuttleWebSocket.close();
+
+                shuttleWebSocket = null;
+            }
+
+
             await logout();
+
 
             window.location.href =
                 "../index.html";

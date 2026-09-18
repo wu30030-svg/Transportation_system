@@ -6,16 +6,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
     <title>A 路線監控｜接駁車中心</title>
 
     <link rel="stylesheet" href="./shuttle-monitor.css">
 
-
 </head>
 
 <body>
-
 
     <main class="monitor-app">
 
@@ -54,26 +51,170 @@
 
         </section>
 
+
+        <!-- ========================================
+             Bottom UI
+             ======================================== -->
+
+        <section
+            id="bottom-ui"
+            class="bottom-ui"
+        >
+
+
+            <!-- ========================================
+                 Bottom Sheet
+                 ======================================== -->
+
+            <div
+                id="bottom-sheet"
+                class="bottom-sheet"
+            >
+
+                <!-- Drag / Handle Indicator -->
+                <div class="bottom-sheet-handle"></div>
+
+
+                <!-- Sheet Content -->
+                <div
+                    id="bottom-sheet-content"
+                    class="bottom-sheet-content"
+                >
+
+                    <!--
+                        內容由 shuttle-monitor.js
+                        根據目前選擇的功能動態產生。
+                    -->
+
+                </div>
+
+            </div>
+
+
+            <!-- ========================================
+                 Bottom Navigation
+                 ======================================== -->
+
+            <nav
+                id="bottom-navigation"
+                class="bottom-navigation"
+            >
+
+
+                <!-- 車輛 -->
+                <button
+                    type="button"
+                    class="bottom-nav-item"
+                    data-panel="vehicles"
+                >
+
+                    <span class="bottom-nav-icon">
+                        ◉
+                    </span>
+
+                    <span class="bottom-nav-label">
+                        車輛
+                    </span>
+
+                </button>
+
+
+                <!-- 監控 -->
+                <button
+                    type="button"
+                    class="bottom-nav-item"
+                    data-panel="monitoring"
+                >
+
+                    <span class="bottom-nav-icon">
+                        ◉
+                    </span>
+
+                    <span class="bottom-nav-label">
+                        監控
+                    </span>
+
+                </button>
+
+
+                <!-- 通訊 -->
+                <button
+                    type="button"
+                    class="bottom-nav-item"
+                    data-panel="communication"
+                >
+
+                    <span class="bottom-nav-icon">
+                        ◉
+                    </span>
+
+                    <span class="bottom-nav-label">
+                        通訊
+                    </span>
+
+                </button>
+
+
+                <!-- 其他 -->
+                <button
+                    type="button"
+                    class="bottom-nav-item"
+                    data-panel="other"
+                >
+
+                    <span class="bottom-nav-icon">
+                        ◉
+                    </span>
+
+                    <span class="bottom-nav-label">
+                        其他
+                    </span>
+
+                </button>
+
+
+            </nav>
+
+
+        </section>
+
+
     </main>
 
 
-    <!-- 共用設定 -->
+    <!-- ========================================
+         共用設定
+         ======================================== -->
+
     <script src="../config.js"></script>
 
-    <!-- 共用登入 / JWT -->
+
+    <!-- ========================================
+         共用登入 / JWT
+         ======================================== -->
+
     <script src="../auth/auth.js"></script>
 
-    <!-- Google Maps -->
+
+    <!-- ========================================
+         Google Maps
+         ======================================== -->
+
     <!--
-    請將這裡的 YOUR_GOOGLE_MAPS_API_KEY
-    換成你目前 index.html 使用的 Google Maps API Key。
--->
+        請將這裡的 YOUR_GOOGLE_MAPS_API_KEY
+        換成你目前 index.html 使用的 Google Maps API Key。
+    -->
+
     <script
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqnZRFp5mWLKUUmh-v0SjSRBi9s-lsAQk&libraries=geometry,marker"
         defer>
-        </script>
+    </script>
 
-    <!-- A 路線監控 -->
+
+    <!-- ========================================
+         A 路線監控
+         ======================================== -->
+
     <script src="./shuttle-monitor.js"></script>
 
 
