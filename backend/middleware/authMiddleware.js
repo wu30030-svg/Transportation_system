@@ -142,6 +142,25 @@ async function authenticateWebSocketToken(token) {
         throw new Error("Invalid session");
     }
 
+    /*
+     * JWT 的 decoded.user_id 是 public UUID
+     *
+     * 例如：
+     * 1e7dd38a-2545-4b6f-837b-20b6393dfb03
+     */
+    const user =
+        await authRepository.findUserByPublicUserId(
+            decoded.user_id
+        );
+
+    if (!user) {
+        throw new Error("User not found");
+    }
+
+    /*
+     * user_sessions.user_id 對應的是
+     * users.id，也就是 internal integer ID。
+     */
     const activeSession =
         await authRepository
             .findActiveSessionBySessionId(
@@ -154,22 +173,30 @@ async function authenticateWebSocketToken(token) {
         );
     }
 
+    /*
+     * 比較正確的兩個 ID：
+     *
+     * activeSession.user_id
+     *        ↓
+     * users.id
+     *
+     * user.id
+     *        ↓
+     * users.id
+     */
     if (
-        activeSession.user_id !==
-        decoded.user_id
+        Number(activeSession.user_id) !==
+        Number(user.id)
     ) {
         throw new Error("Invalid session");
     }
 
-    const user =
-        await authRepository.findUserByPublicUserId(
-            decoded.user_id
-        );
-
-    if (!user) {
-        throw new Error("User not found");
-    }
-
+    /*
+     * 回傳 WebSocket 使用者資料。
+     *
+     * user_id 保持 public UUID，
+     * 不要改成 internal integer ID。
+     */
     return {
         ...decoded,
 
