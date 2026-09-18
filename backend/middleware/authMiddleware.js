@@ -149,7 +149,7 @@ async function authenticateWebSocketToken(token) {
      * 1e7dd38a-2545-4b6f-837b-20b6393dfb03
      */
     const user =
-        await authRepository.findUserByPublicUserId(
+        await authRepository.findUserById(
             decoded.user_id
         );
 
