@@ -287,6 +287,10 @@ async function findCurrentShuttleLocations(
             p.personnel_number,
             p.name AS personnel_name,
 
+            u.user_id,
+            u.username,
+            u.access_context,
+
             CASE
                 WHEN sl.recorded_at IS NULL THEN 'NO_LOCATION'
                 WHEN sl.recorded_at >= NOW() - INTERVAL '15 seconds'
