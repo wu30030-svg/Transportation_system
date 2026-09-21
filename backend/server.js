@@ -144,6 +144,22 @@ app.post("/api/auth/force-logout/:username", authenticateToken, async (req, res)
         const targetSocket =
             onlineUsers.get(targetUserId);
 
+        console.log(
+            "[Call] Target ID type:",
+            typeof targetUserId,
+            "| value:",
+            targetUserId
+        );
+        console.log(
+            "[Call] Online user key types:",
+            [...onlineUsers.keys()].map(
+                userId => ({
+                    userId,
+                    type: typeof userId
+                })
+            )
+        );
+
         // 如果 WebSocket 在線，通知前端並斷線
         if (
             targetSocket &&
