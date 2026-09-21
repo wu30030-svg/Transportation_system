@@ -285,18 +285,23 @@ async function findCurrentShuttleLocations(
             sl.updated_at,
 
             p.personnel_number,
-            p.name AS personnel_name
+            p.name AS personnel_name,
 
-        FROM shuttle_locations AS sl
+            CASE
+                WHEN sl.recorded_at IS NULL THEN 'NO_LOCATION'
+                WHEN sl.recorded_at >= NOW() - INTERVAL '15 seconds'
+                    THEN 'ONLINE'
+                ELSE 'OFFLINE'
+            END AS gps_status
 
-        INNER JOIN personnel AS p
-            ON p.id = sl.personnel_id
+        FROM personnel AS p
 
         INNER JOIN users AS u
             ON u.id = p.user_id
+           AND u.access_context = $1
 
-        WHERE u.access_context = $1
-          AND sl.updated_at >= NOW() - INTERVAL '30 seconds'
+        LEFT JOIN shuttle_locations AS sl
+            ON sl.personnel_id = p.id
 
         ORDER BY
             p.personnel_number ASC;
