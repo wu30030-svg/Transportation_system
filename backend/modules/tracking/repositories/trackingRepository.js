@@ -303,6 +303,7 @@ async function findCurrentShuttleLocations(
         INNER JOIN users AS u
             ON u.id = p.user_id
            AND u.access_context = $1
+           AND u.role_id = 4
 
         LEFT JOIN shuttle_locations AS sl
             ON sl.personnel_id = p.id
