@@ -363,7 +363,7 @@ wss.on("connection", (socket) => {
             if (data.type === "call") {
 
                 const targetUserId =
-                    data.target_user_id;
+                    Number(data.target_user_id);
 
                 const targetSocket =
                     onlineUsers.get(targetUserId);
