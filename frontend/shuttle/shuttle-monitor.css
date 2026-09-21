@@ -550,6 +550,34 @@ Google Maps UI 微調
 }
 
 
+/* ========================================
+   GPS Status
+======================================== */
+
+.communication-status-dot.online {
+    background: #66c27a;
+
+    box-shadow:
+        0 0 0 2px rgba(102, 194, 122, 0.12);
+}
+
+
+.communication-status-dot.offline {
+    background: #e05252;
+
+    box-shadow:
+        0 0 0 2px rgba(224, 82, 82, 0.12);
+}
+
+
+.communication-status-dot.no_location {
+    background: #626c78;
+
+    box-shadow:
+        0 0 0 2px rgba(98, 108, 120, 0.12);
+}
+
+
 .communication-person-info {
     min-width: 0;
 }
@@ -624,4 +652,100 @@ Google Maps UI 微調
     background: rgba(242, 193, 78, 0.14);
 
     border-color: rgba(242, 193, 78, 0.45);
+}
+
+/* ========================================
+   Map Display Settings
+======================================== */
+
+.map-display-settings {
+    padding-top: 4px;
+}
+
+
+.map-display-option {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 14px 12px;
+
+    margin-bottom: 8px;
+
+    border: 1px solid #242b34;
+    border-radius: 8px;
+
+    background: #11161d;
+
+    color: #f2f4f7;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease;
+}
+
+
+.map-display-option:hover {
+    background: #171d25;
+}
+
+
+.map-display-option.active {
+    border-color: rgba(242, 193, 78, 0.45);
+
+    background: rgba(242, 193, 78, 0.06);
+}
+
+
+.map-display-option-radio {
+    flex-shrink: 0;
+
+    width: 12px;
+    height: 12px;
+
+    border: 2px solid #626c78;
+
+    border-radius: 50%;
+}
+
+
+.map-display-option.active .map-display-option-radio {
+    border-color: #f2c14e;
+
+    background: #f2c14e;
+
+    box-shadow:
+        0 0 0 3px rgba(242, 193, 78, 0.12);
+}
+
+
+.map-display-option-content {
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+
+.map-display-option-title {
+    font-size: 13px;
+
+    font-weight: 650;
+}
+
+
+.map-display-option-text {
+    margin-top: 3px;
+
+    font-size: 10px;
+
+    color: #7f8996;
 }

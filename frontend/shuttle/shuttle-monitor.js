@@ -20,6 +20,13 @@ const shuttleMarkers = new Map();
 
 let shuttleRefreshTimer = null;
 
+let shuttleLocations = [];
+
+// ========================================
+// Map Display Filter
+// ========================================
+
+let shuttleMapDisplayMode = "all";
 
 // ========================================
 // WebSocket State
@@ -369,6 +376,8 @@ async function refreshShuttleLocations() {
                 ? data.data
                 : [];
 
+        shuttleLocations = locations;
+
         console.log(
             `[Shuttle Monitor] 收到 ${locations.length} 筆定位資料`
         );
@@ -376,6 +385,10 @@ async function refreshShuttleLocations() {
         renderARouteLocations(
             locations
         );
+
+        renderVehiclePanel();
+
+        renderCommunicationPanel();
 
     } catch (error) {
 
@@ -396,6 +409,7 @@ function renderARouteLocations(locations) {
     const currentIds =
         new Set();
 
+
     locations.forEach(location => {
 
         const personnelNumber =
@@ -409,6 +423,7 @@ function renderARouteLocations(locations) {
             return;
         }
 
+
         if (
             typeof location.latitude !==
             "number" ||
@@ -419,9 +434,26 @@ function renderARouteLocations(locations) {
             return;
         }
 
+
+        // ========================================
+        // Map Display Filter
+        // ========================================
+
+        if (
+            shuttleMapDisplayMode ===
+            "online" &&
+            location.gps_status !==
+            "ONLINE"
+        ) {
+
+            return;
+        }
+
+
         currentIds.add(
             personnelNumber
         );
+
 
         updateShuttleMarker(
             personnelNumber,
@@ -431,6 +463,10 @@ function renderARouteLocations(locations) {
 
     });
 
+
+    // ========================================
+    // Remove Hidden / Missing Markers
+    // ========================================
 
     shuttleMarkers.forEach(
         (
@@ -560,6 +596,123 @@ function createShuttleMarker(
     return marker;
 }
 
+// ========================================
+// Vehicle / GPS Status
+// ========================================
+
+function renderVehiclePanel() {
+
+    const vehicleList =
+        document.querySelector(
+            ".shuttle-vehicle-list"
+        );
+
+    if (!vehicleList) {
+        return;
+    }
+
+
+    const drivers =
+        shuttleLocations.filter(
+            driver =>
+                Number(driver.role_id) === 4
+        );
+
+
+    if (drivers.length === 0) {
+
+        vehicleList.innerHTML = `
+
+            <div class="communication-empty">
+
+                <div class="communication-empty-title">
+                    目前沒有路線駕駛
+                </div>
+
+                <div class="communication-empty-text">
+                    尚未取得駕駛資料
+                </div>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    vehicleList.innerHTML =
+        drivers.map(
+            driver => {
+
+                const personnelName =
+                    driver.personnel_name ||
+                    driver.username ||
+                    "未設定姓名";
+
+                const personnelNumber =
+                    driver.personnel_number ||
+                    "未設定編號";
+
+                const gpsStatus =
+                    driver.gps_status ||
+                    "NO_LOCATION";
+
+
+                let statusText =
+                    "尚未定位";
+
+
+                if (gpsStatus === "ONLINE") {
+
+                    statusText =
+                        "ONLINE";
+
+                } else if (
+                    gpsStatus === "OFFLINE"
+                ) {
+
+                    statusText =
+                        "OFFLINE";
+
+                }
+
+
+                return `
+
+                    <div class="communication-item">
+
+                        <div class="communication-person">
+
+                            <div
+                                class="communication-status-dot ${gpsStatus.toLowerCase()}"
+                            ></div>
+
+                            <div class="communication-person-info">
+
+                                <div class="communication-person-name">
+                                    ${escapeHtml(personnelName)}
+                                </div>
+
+                                <div class="communication-person-number">
+                                    ${escapeHtml(personnelNumber)}
+                                </div>
+
+                                <div class="communication-person-context">
+                                    GPS：${escapeHtml(statusText)}
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+        ).join("");
+}
 
 // ========================================
 // Communication
@@ -567,36 +720,11 @@ function createShuttleMarker(
 
 function getOnlineDrivers() {
 
-    /*
-     * 目前監控端自己是 role 6。
-     *
-     * 通訊名單只顯示：
-     *
-     * role_id = 4
-     * 同 access_context
-     */
-
-    const currentUser =
-        shuttleOnlineUsers.find(
-            user =>
-                Number(user.role_id) === 6
-        );
-
-
-    if (!currentUser) {
-
-        return shuttleOnlineUsers.filter(
-            user =>
-                Number(user.role_id) === 4
-        );
-    }
-
-
     return shuttleOnlineUsers.filter(
         user =>
             Number(user.role_id) === 4 &&
-            user.access_context ===
-            currentUser.access_context
+            user.user_id &&
+            user.access_context
     );
 }
 
@@ -672,7 +800,6 @@ function renderCommunicationPanel() {
 
                 const userId =
                     driver.user_id || "";
-
 
                 return `
 
@@ -832,7 +959,6 @@ const bottomNavigation =
         "bottom-navigation"
     );
 
-
 // ========================================
 // Bottom Panel Content
 // ========================================
@@ -845,14 +971,39 @@ const bottomPanelContents = {
 
         html: `
 
-            <div class="bottom-panel-empty">
+            <div class="bottom-panel-header">
 
-                <div class="bottom-panel-empty-title">
-                    車輛
+                <div>
+
+                    <div class="bottom-panel-title">
+                        車輛
+                    </div>
+
+                    <div class="bottom-panel-subtitle">
+                        路線車輛
+                    </div>
+
                 </div>
 
-                <div class="bottom-panel-empty-text">
-                    車輛資訊將顯示於此
+                <div class="bottom-panel-status">
+                    GPS
+                </div>
+
+            </div>
+
+
+            <div class="shuttle-vehicle-list">
+
+                <div class="communication-empty">
+
+                    <div class="communication-empty-title">
+                        正在取得車輛資料
+                    </div>
+
+                    <div class="communication-empty-text">
+                        GPS 定位資料載入中
+                    </div>
+
                 </div>
 
             </div>
@@ -939,24 +1090,174 @@ const bottomPanelContents = {
 
         html: `
 
-            <div class="bottom-panel-empty">
+        <div class="bottom-panel-header">
 
-                <div class="bottom-panel-empty-title">
+            <div>
+
+                <div class="bottom-panel-title">
                     其他
                 </div>
 
-                <div class="bottom-panel-empty-text">
-                    其他功能將顯示於此
+                <div class="bottom-panel-subtitle">
+                    地圖顯示設定
                 </div>
 
             </div>
 
-        `
+        </div>
+
+
+        <div class="map-display-settings">
+
+            <div class="bottom-panel-empty">
+
+                <div class="bottom-panel-empty-title">
+                    駕駛顯示
+                </div>
+
+                <div class="bottom-panel-empty-text">
+                    選擇地圖上的駕駛顯示範圍
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="map-display-option"
+                data-map-display-mode="all"
+            >
+
+                <span class="map-display-option-radio"></span>
+
+                <span class="map-display-option-content">
+
+                    <span class="map-display-option-title">
+                        全部駕駛
+                    </span>
+
+                    <span class="map-display-option-text">
+                        顯示在線與離線駕駛
+                    </span>
+
+                </span>
+
+            </button>
+
+
+            <button
+                type="button"
+                class="map-display-option"
+                data-map-display-mode="online"
+            >
+
+                <span class="map-display-option-radio"></span>
+
+                <span class="map-display-option-content">
+
+                    <span class="map-display-option-title">
+                        僅在線駕駛
+                    </span>
+
+                    <span class="map-display-option-text">
+                        只顯示目前 GPS 在線駕駛
+                    </span>
+
+                </span>
+
+            </button>
+
+        </div>
+
+    `
 
     }
 
 };
 
+// ========================================
+// Map Display Settings
+// ========================================
+
+function bindMapDisplaySettings() {
+
+    const options =
+        document.querySelectorAll(
+            ".map-display-option"
+        );
+
+
+    options.forEach(option => {
+
+        option.addEventListener(
+            "click",
+            () => {
+
+                const mode =
+                    option.dataset.mapDisplayMode;
+
+
+                if (
+                    mode !== "all" &&
+                    mode !== "online"
+                ) {
+
+                    return;
+                }
+
+
+                shuttleMapDisplayMode =
+                    mode;
+
+
+                updateMapDisplaySettings();
+
+
+                renderARouteLocations(
+                    shuttleLocations
+                );
+
+            }
+        );
+
+    });
+
+
+    updateMapDisplaySettings();
+}
+
+
+// ========================================
+// Update Map Display Settings UI
+// ========================================
+
+function updateMapDisplaySettings() {
+
+    const options =
+        document.querySelectorAll(
+            ".map-display-option"
+        );
+
+
+    options.forEach(option => {
+
+        const mode =
+            option.dataset.mapDisplayMode;
+
+
+        const isActive =
+            mode ===
+            shuttleMapDisplayMode;
+
+
+        option.classList.toggle(
+            "active",
+            isActive
+        );
+
+    });
+
+}
 
 // ========================================
 // Open Bottom Panel
@@ -966,6 +1267,7 @@ function openBottomPanel(panelName) {
 
     const panel =
         bottomPanelContents[panelName];
+
 
     if (!panel) {
 
@@ -1012,11 +1314,19 @@ function openBottomPanel(panelName) {
         });
 
 
-    /*
-     * 如果打開的是通訊，
-     * 立刻用目前最新的 WebSocket
-     * 名單產生駕駛列表。
-     */
+    // ========================================
+    // Panel Refresh
+    // ========================================
+
+    if (
+        panelName ===
+        "vehicles"
+    ) {
+
+        renderVehiclePanel();
+
+    }
+
 
     if (
         panelName ===
@@ -1024,9 +1334,19 @@ function openBottomPanel(panelName) {
     ) {
 
         renderCommunicationPanel();
-    }
-}
 
+    }
+
+    if (
+        panelName ===
+        "other"
+    ) {
+
+        bindMapDisplaySettings();
+
+    }
+
+}
 
 // ========================================
 // Close Bottom Panel
