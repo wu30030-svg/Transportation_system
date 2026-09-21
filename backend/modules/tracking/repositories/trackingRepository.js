@@ -289,6 +289,7 @@ async function findCurrentShuttleLocations(
 
             u.user_id,
             u.username,
+            u.role_id,
             u.access_context,
 
             CASE
