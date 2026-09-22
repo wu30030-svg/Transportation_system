@@ -15,7 +15,7 @@ const poolConfig = usingDatabaseUrl
         connectionString: process.env.DATABASE_URL,
         ssl: {
             rejectUnauthorized: false
-        }
+        },
     }
     : {
         host: process.env.DB_HOST,
