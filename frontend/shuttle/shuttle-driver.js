@@ -26,12 +26,17 @@ const SHUTTLE_LOCATION_API =
 
 let gpsWatchId = null;
 
-
 // ========================================
 // WebSocket State
 // ========================================
 
 let shuttleWebSocket = null;
+
+// ========================================
+// Call State
+// ========================================
+
+let incomingCallId = null;
 
 
 // ========================================
@@ -481,6 +486,73 @@ function handleShuttleWebSocketMessage(data) {
         return;
     }
 
+    // ----------------------------------------
+    // Incoming Call
+    // ----------------------------------------
+
+    if (
+        data.type ===
+        "call:incoming"
+    ) {
+
+        console.log(
+            "[Shuttle Communication] Incoming call:",
+            data
+        );
+
+
+        incomingCallId =
+            data.call_id;
+
+
+        const caller =
+            data.caller || {};
+
+
+        const nameElement =
+            document.getElementById(
+                "incoming-call-name"
+            );
+
+
+        const routeElement =
+            document.getElementById(
+                "incoming-call-route"
+            );
+
+
+        const overlay =
+            document.getElementById(
+                "incoming-call-overlay"
+            );
+
+
+        if (nameElement) {
+
+            nameElement.textContent =
+                caller.username ||
+                "未知使用者";
+        }
+
+
+        if (routeElement) {
+
+            routeElement.textContent =
+                caller.access_context ||
+                "未知路線";
+        }
+
+
+        if (overlay) {
+
+            overlay.classList.remove(
+                "hidden"
+            );
+        }
+
+
+        return;
+    }
 
     // ----------------------------------------
     // Force Logout
@@ -544,6 +616,125 @@ function handleShuttleWebSocketMessage(data) {
     }
 }
 
+// ========================================
+// Call Actions
+// ========================================
+
+function acceptIncomingCall() {
+
+    if (!incomingCallId) {
+
+        console.warn(
+            "[Shuttle Communication] 沒有可接聽的來電"
+        );
+
+        return;
+    }
+
+
+    if (
+        !shuttleWebSocket ||
+        shuttleWebSocket.readyState !==
+        WebSocket.OPEN
+    ) {
+
+        console.error(
+            "[Shuttle Communication] WebSocket 未連線"
+        );
+
+        return;
+    }
+
+
+    console.log(
+        "[Shuttle Communication] 接聽:",
+        incomingCallId
+    );
+
+
+    shuttleWebSocket.send(
+        JSON.stringify({
+
+            type:
+                "call:accept",
+
+            call_id:
+                incomingCallId
+        })
+    );
+
+
+    closeIncomingCall();
+}
+
+
+function rejectIncomingCall() {
+
+    if (!incomingCallId) {
+
+        console.warn(
+            "[Shuttle Communication] 沒有可拒絕的來電"
+        );
+
+        return;
+    }
+
+
+    if (
+        !shuttleWebSocket ||
+        shuttleWebSocket.readyState !==
+        WebSocket.OPEN
+    ) {
+
+        console.error(
+            "[Shuttle Communication] WebSocket 未連線"
+        );
+
+        return;
+    }
+
+
+    console.log(
+        "[Shuttle Communication] 拒絕:",
+        incomingCallId
+    );
+
+
+    shuttleWebSocket.send(
+        JSON.stringify({
+
+            type:
+                "call:reject",
+
+            call_id:
+                incomingCallId
+        })
+    );
+
+
+    closeIncomingCall();
+}
+
+
+function closeIncomingCall() {
+
+    incomingCallId =
+        null;
+
+
+    const overlay =
+        document.getElementById(
+            "incoming-call-overlay"
+        );
+
+
+    if (overlay) {
+
+        overlay.classList.add(
+            "hidden"
+        );
+    }
+}
 
 // ========================================
 // Start
@@ -553,6 +744,42 @@ startGPS();
 
 connectShuttleWebSocket();
 
+// ========================================
+// Incoming Call UI
+// ========================================
+
+const incomingCallAcceptButton =
+    document.getElementById(
+        "incoming-call-accept"
+    );
+
+
+const incomingCallRejectButton =
+    document.getElementById(
+        "incoming-call-reject"
+    );
+
+
+if (
+    incomingCallAcceptButton
+) {
+
+    incomingCallAcceptButton.addEventListener(
+        "click",
+        acceptIncomingCall
+    );
+}
+
+
+if (
+    incomingCallRejectButton
+) {
+
+    incomingCallRejectButton.addEventListener(
+        "click",
+        rejectIncomingCall
+    );
+}
 
 // ========================================
 // Logout
