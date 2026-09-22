@@ -36,6 +36,19 @@ let shuttleWebSocket = null;
 
 let shuttleOnlineUsers = [];
 
+// ========================================
+// Call State
+// ========================================
+
+let activeCallId = null;
+
+let activeCallTarget = null;
+
+let activeCallState = null;
+
+let callStartedAt = null;
+
+let callTimer = null;
 
 // ========================================
 // Map Initialization
@@ -286,6 +299,98 @@ function handleShuttleWebSocketMessage(data) {
         return;
     }
 
+    // ========================================
+    // Call Incoming
+    // ========================================
+
+    if (data.type === "call:incoming") {
+
+        console.log(
+            "[Shuttle Communication] 收到來電:",
+            data
+        );
+
+        return;
+    }
+
+
+    // ========================================
+    // Call Accepted
+    // ========================================
+
+    if (data.type === "call:accepted") {
+
+        console.log(
+            "[Shuttle Communication] 對方已接聽:",
+            data
+        );
+
+        activeCallId =
+            data.call_id;
+
+        activeCallState =
+            "CONNECTED";
+
+        callStartedAt =
+            Date.now();
+
+        updateCallWindow();
+
+        startCallTimer();
+
+        return;
+    }
+
+
+    // ========================================
+    // Call Rejected
+    // ========================================
+
+    if (data.type === "call:rejected") {
+
+        console.log(
+            "[Shuttle Communication] 對方拒絕通話:",
+            data
+        );
+
+        closeCallWindow();
+
+        return;
+    }
+
+
+    // ========================================
+    // Call Ended
+    // ========================================
+
+    if (data.type === "call:ended") {
+
+        console.log(
+            "[Shuttle Communication] 通話結束:",
+            data
+        );
+
+        closeCallWindow();
+
+        return;
+    }
+
+
+    // ========================================
+    // Call Error
+    // ========================================
+
+    if (data.type === "call:error") {
+
+        console.warn(
+            "[Shuttle Communication] 通話錯誤:",
+            data
+        );
+
+        closeCallWindow();
+
+        return;
+    }
 
     // ========================================
     // Force Logout
@@ -850,6 +955,390 @@ function renderCommunicationPanel() {
     bindCommunicationCallButtons();
 }
 
+// ========================================
+// Call Window
+// ========================================
+
+function createCallWindow() {
+
+    if (
+        document.getElementById(
+            "shuttle-call-window"
+        )
+    ) {
+
+        return;
+    }
+
+
+    const callWindow =
+        document.createElement(
+            "div"
+        );
+
+    callWindow.id =
+        "shuttle-call-window";
+
+    callWindow.className =
+        "shuttle-call-window hidden";
+
+
+    callWindow.innerHTML = `
+
+        <div class="shuttle-call-card">
+
+            <div class="shuttle-call-icon">
+                📞
+            </div>
+
+            <div
+                id="shuttle-call-state"
+                class="shuttle-call-state"
+            >
+                呼叫中
+            </div>
+
+            <div
+                id="shuttle-call-name"
+                class="shuttle-call-name"
+            >
+                --
+            </div>
+
+            <div
+                id="shuttle-call-number"
+                class="shuttle-call-number"
+            >
+                --
+            </div>
+
+            <div
+                id="shuttle-call-route"
+                class="shuttle-call-route"
+            >
+                --
+            </div>
+
+            <div
+                id="shuttle-call-status"
+                class="shuttle-call-status"
+            >
+                等待對方接聽...
+            </div>
+
+            <div
+                id="shuttle-call-timer"
+                class="shuttle-call-timer"
+            >
+                00:00
+            </div>
+
+            <button
+                id="shuttle-call-hangup"
+                type="button"
+                class="shuttle-call-hangup"
+            >
+                掛斷
+            </button>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        callWindow
+    );
+
+
+    const hangupButton =
+        document.getElementById(
+            "shuttle-call-hangup"
+        );
+
+
+    if (hangupButton) {
+
+        hangupButton.addEventListener(
+            "click",
+            hangupActiveCall
+        );
+
+    }
+
+}
+
+function updateCallWindow() {
+
+    createCallWindow();
+
+
+    const callWindow =
+        document.getElementById(
+            "shuttle-call-window"
+        );
+
+
+    const stateElement =
+        document.getElementById(
+            "shuttle-call-state"
+        );
+
+
+    const nameElement =
+        document.getElementById(
+            "shuttle-call-name"
+        );
+
+
+    const numberElement =
+        document.getElementById(
+            "shuttle-call-number"
+        );
+
+
+    const routeElement =
+        document.getElementById(
+            "shuttle-call-route"
+        );
+
+
+    const statusElement =
+        document.getElementById(
+            "shuttle-call-status"
+        );
+
+
+    const timerElement =
+        document.getElementById(
+            "shuttle-call-timer"
+        );
+
+
+    if (!callWindow) {
+        return;
+    }
+
+
+    const target =
+        activeCallTarget || {};
+
+
+    if (nameElement) {
+
+        nameElement.textContent =
+            target.personnel_name ||
+            target.username ||
+            "未知駕駛";
+    }
+
+
+    if (numberElement) {
+
+        numberElement.textContent =
+            target.personnel_number ||
+            "--";
+    }
+
+
+    if (routeElement) {
+
+        routeElement.textContent =
+            target.access_context ||
+            "未知路線";
+    }
+
+
+    if (
+        activeCallState ===
+        "CALLING"
+    ) {
+
+        if (stateElement) {
+            stateElement.textContent =
+                "呼叫中";
+        }
+
+        if (statusElement) {
+            statusElement.textContent =
+                "等待對方接聽...";
+        }
+
+        if (timerElement) {
+            timerElement.textContent =
+                "00:00";
+        }
+
+    }
+
+
+    if (
+        activeCallState ===
+        "CONNECTED"
+    ) {
+
+        if (stateElement) {
+            stateElement.textContent =
+                "通話中";
+        }
+
+        if (statusElement) {
+            statusElement.textContent =
+                "語音通話已建立";
+        }
+
+    }
+
+
+    callWindow.classList.remove(
+        "hidden"
+    );
+}
+
+function startCallTimer() {
+
+    stopCallTimer();
+
+
+    callTimer =
+        setInterval(
+            () => {
+
+                if (!callStartedAt) {
+                    return;
+                }
+
+
+                const elapsed =
+                    Math.floor(
+                        (
+                            Date.now() -
+                            callStartedAt
+                        ) / 1000
+                    );
+
+
+                const minutes =
+                    Math.floor(
+                        elapsed / 60
+                    );
+
+
+                const seconds =
+                    elapsed % 60;
+
+
+                const timerElement =
+                    document.getElementById(
+                        "shuttle-call-timer"
+                    );
+
+
+                if (timerElement) {
+
+                    timerElement.textContent =
+                        `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+                }
+
+            },
+            1000
+        );
+
+}
+
+
+function stopCallTimer() {
+
+    if (callTimer) {
+
+        clearInterval(
+            callTimer
+        );
+
+        callTimer = null;
+
+    }
+
+}
+
+function hangupActiveCall() {
+
+    if (!activeCallId) {
+
+        return;
+    }
+
+
+    if (
+        !shuttleWebSocket ||
+        shuttleWebSocket.readyState !==
+        WebSocket.OPEN
+    ) {
+
+        console.warn(
+            "[Shuttle Communication] WebSocket 未連線"
+        );
+
+        return;
+    }
+
+
+    console.log(
+        "[Shuttle Communication] 掛斷:",
+        activeCallId
+    );
+
+
+    shuttleWebSocket.send(
+        JSON.stringify({
+
+            type:
+                "call:hangup",
+
+            call_id:
+                activeCallId
+
+        })
+    );
+
+
+    closeCallWindow();
+}
+
+function closeCallWindow() {
+
+    stopCallTimer();
+
+
+    activeCallId =
+        null;
+
+    activeCallTarget =
+        null;
+
+    activeCallState =
+        null;
+
+    callStartedAt =
+        null;
+
+
+    const callWindow =
+        document.getElementById(
+            "shuttle-call-window"
+        );
+
+
+    if (callWindow) {
+
+        callWindow.classList.add(
+            "hidden"
+        );
+
+    }
+
+}
 
 // ========================================
 // Escape HTML
@@ -892,6 +1381,38 @@ function bindCommunicationCallButtons() {
                         targetUserId
                     );
 
+                    const targetDriver =
+                        getOnlineDrivers().find(
+                            driver =>
+                                String(driver.user_id) ===
+                                String(targetUserId)
+                        );
+
+
+                    if (!targetDriver) {
+
+                        console.warn(
+                            "[Shuttle Communication] 找不到目標駕駛:",
+                            targetUserId
+                        );
+
+                        return;
+                    }
+
+
+                    activeCallId =
+                        null;
+
+                    activeCallTarget =
+                        targetDriver;
+
+                    activeCallState =
+                        "CALLING";
+
+                    callStartedAt =
+                        null;
+
+                    updateCallWindow();
 
                     /*
                      * 確認 WebSocket
