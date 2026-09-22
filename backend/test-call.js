@@ -25,42 +25,41 @@ ws.on("open", () => {
 
 ws.on("message", (message) => {
 
-    const data = JSON.parse(message.toString());
+    const data =
+        JSON.parse(
+            message.toString()
+        );
 
-    console.log(`[${role}] <=`, data);
+    console.log(
+        `[${role}] <=`,
+        data
+    );
 
 });
 
-process.stdin.on("data", (input) => {
+function sendPayload(payload) {
 
-    const command = input.toString().trim();
+    console.log(
+        `[${role}] SEND ->`,
+        JSON.stringify(payload)
+    );
 
-    if (command.startsWith("call ")) {
+    console.log(
+        `[${role}] WebSocket state =`,
+        ws.readyState
+    );
 
-        const targetUserId = command.substring(5).trim();
-
-        const payload = {
-            type: "call",
-            target_user_id: targetUserId
-        };
-
-        console.log(
-            `[${role}] SEND ->`,
-            JSON.stringify(payload)
-        );
-
-        console.log(
-            `[${role}] WebSocket state =`,
-            ws.readyState
-        );
-
-        ws.send(JSON.stringify(payload), (error) => {
+    ws.send(
+        JSON.stringify(payload),
+        (error) => {
 
             if (error) {
+
                 console.error(
                     `[${role}] SEND ERROR:`,
                     error.message
                 );
+
                 return;
             }
 
@@ -68,109 +67,230 @@ process.stdin.on("data", (input) => {
                 `[${role}] SEND SUCCESS`
             );
 
+        }
+    );
+}
+
+process.stdin.on("data", (input) => {
+
+    const command =
+        input.toString().trim();
+
+    // ========================================
+    // Call
+    // ========================================
+
+    if (command.startsWith("call ")) {
+
+        const targetUserId =
+            command
+                .substring(5)
+                .trim();
+
+        sendPayload({
+            type: "call",
+            target_user_id: targetUserId
         });
+
+        return;
     }
+
+    // ========================================
+    // Accept
+    // ========================================
+
     if (command.startsWith("accept ")) {
 
         const callId =
-            command.substring(7).trim();
+            command
+                .substring(7)
+                .trim();
 
-        const payload = {
+        sendPayload({
             type: "call:accept",
             call_id: callId
-        };
+        });
 
-        console.log(
-            `[${role}] SEND ->`,
-            JSON.stringify(payload)
-        );
-
-        ws.send(
-            JSON.stringify(payload),
-            (error) => {
-
-                if (error) {
-                    console.error(
-                        `[${role}] SEND ERROR:`,
-                        error.message
-                    );
-                    return;
-                }
-
-                console.log(
-                    `[${role}] SEND SUCCESS`
-                );
-
-            }
-        );
+        return;
     }
+
+    // ========================================
+    // Reject
+    // ========================================
+
     if (command.startsWith("reject ")) {
 
         const callId =
-            command.substring(7).trim();
+            command
+                .substring(7)
+                .trim();
 
-        const payload = {
+        sendPayload({
             type: "call:reject",
             call_id: callId
-        };
+        });
 
-        console.log(
-            `[${role}] SEND ->`,
-            JSON.stringify(payload)
-        );
-
-        ws.send(
-            JSON.stringify(payload),
-            (error) => {
-
-                if (error) {
-                    console.error(
-                        `[${role}] SEND ERROR:`,
-                        error.message
-                    );
-                    return;
-                }
-
-                console.log(
-                    `[${role}] SEND SUCCESS`
-                );
-
-            }
-        );
+        return;
     }
+
+    // ========================================
+    // Hangup
+    // ========================================
+
     if (command.startsWith("hangup ")) {
 
         const callId =
-            command.substring(7).trim();
+            command
+                .substring(7)
+                .trim();
 
-        const payload = {
+        sendPayload({
             type: "call:hangup",
             call_id: callId
-        };
+        });
 
-        console.log(
-            `[${role}] SEND ->`,
-            JSON.stringify(payload)
-        );
-
-        ws.send(
-            JSON.stringify(payload),
-            (error) => {
-
-                if (error) {
-                    console.error(
-                        `[${role}] SEND ERROR:`,
-                        error.message
-                    );
-                    return;
-                }
-
-                console.log(
-                    `[${role}] SEND SUCCESS`
-                );
-            }
-        );
+        return;
     }
+
+    // ========================================
+    // WebRTC Offer
+    // ========================================
+
+    if (command.startsWith("offer ")) {
+
+        const callId =
+            command
+                .substring(6, command.indexOf(" ", 6))
+                .trim();
+
+        const offerJson =
+            command
+                .substring(
+                    command.indexOf(" ", 6) + 1
+                )
+                .trim();
+
+        let offer;
+
+        try {
+
+            offer =
+                JSON.parse(
+                    offerJson
+                );
+
+        } catch (error) {
+
+            console.error(
+                `[${role}] Invalid offer JSON`
+            );
+
+            return;
+        }
+
+        sendPayload({
+            type: "call:webrtc-offer",
+            call_id: callId,
+            offer
+        });
+
+        return;
+    }
+
+    // ========================================
+    // WebRTC Answer
+    // ========================================
+
+    if (command.startsWith("answer ")) {
+
+        const callId =
+            command
+                .substring(7, command.indexOf(" ", 7))
+                .trim();
+
+        const answerJson =
+            command
+                .substring(
+                    command.indexOf(" ", 7) + 1
+                )
+                .trim();
+
+        let answer;
+
+        try {
+
+            answer =
+                JSON.parse(
+                    answerJson
+                );
+
+        } catch (error) {
+
+            console.error(
+                `[${role}] Invalid answer JSON`
+            );
+
+            return;
+        }
+
+        sendPayload({
+            type: "call:webrtc-answer",
+            call_id: callId,
+            answer
+        });
+
+        return;
+    }
+
+    // ========================================
+    // WebRTC ICE Candidate
+    // ========================================
+
+    if (command.startsWith("ice ")) {
+
+        const callId =
+            command
+                .substring(4, command.indexOf(" ", 4))
+                .trim();
+
+        const candidateJson =
+            command
+                .substring(
+                    command.indexOf(" ", 4) + 1
+                )
+                .trim();
+
+        let candidate;
+
+        try {
+
+            candidate =
+                JSON.parse(
+                    candidateJson
+                );
+
+        } catch (error) {
+
+            console.error(
+                `[${role}] Invalid ICE candidate JSON`
+            );
+
+            return;
+        }
+
+        sendPayload({
+            type: "call:webrtc-ice",
+            call_id: callId,
+            candidate
+        });
+
+        return;
+    }
+
+    console.log(
+        `[${role}] Unknown command:`,
+        command
+    );
 
 });
 
@@ -185,6 +305,8 @@ ws.on("error", (error) => {
 
 ws.on("close", () => {
 
-    console.log(`[${role}] WebSocket closed`);
+    console.log(
+        `[${role}] WebSocket closed`
+    );
 
 });

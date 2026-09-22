@@ -439,7 +439,8 @@ wss.on("connection", (socket) => {
 
                 activeCalls.set(callId, {
                     callerUserId: socket.user.user_id,
-                    targetUserId: targetSocket.user.user_id
+                    targetUserId: targetSocket.user.user_id,
+                    status: "RINGING"
                 });
 
                 // 傳送來電通知
@@ -541,6 +542,8 @@ wss.on("connection", (socket) => {
                     return;
                 }
 
+                call.status = "CONNECTED";
+
                 // 通知呼叫方：對方已接受
                 callerSocket.send(
                     JSON.stringify({
@@ -629,6 +632,129 @@ wss.on("connection", (socket) => {
 
                 return;
             }
+
+            // ========================================
+            // WebRTC Signaling Relay
+            // ========================================
+
+            if (
+                data.type === "call:webrtc-offer" ||
+                data.type === "call:webrtc-answer" ||
+                data.type === "call:webrtc-ice"
+            ) {
+
+                const callId =
+                    data.call_id;
+
+                const call =
+                    activeCalls.get(callId);
+
+                // 找不到這通電話
+                if (!call) {
+
+                    socket.send(
+                        JSON.stringify({
+                            type: "call:error",
+                            reason: "CALL_NOT_FOUND"
+                        })
+                    );
+
+                    return;
+                }
+
+                // 必須是這通電話的其中一方
+                const isParticipant =
+                    socket.user.user_id === call.callerUserId ||
+                    socket.user.user_id === call.targetUserId;
+
+                if (!isParticipant) {
+
+                    socket.send(
+                        JSON.stringify({
+                            type: "call:error",
+                            reason: "NOT_CALL_PARTICIPANT"
+                        })
+                    );
+
+                    return;
+                }
+
+                // WebRTC signaling 必須在接聽後才能開始
+                if (call.status !== "CONNECTED") {
+
+                    socket.send(
+                        JSON.stringify({
+                            type: "call:error",
+                            reason: "CALL_NOT_CONNECTED"
+                        })
+                    );
+
+                    return;
+                }
+
+                // 找另一方
+                const otherUserId =
+                    socket.user.user_id === call.callerUserId
+                        ? call.targetUserId
+                        : call.callerUserId;
+
+                const otherSocket =
+                    onlineUsers.get(otherUserId);
+
+                // 對方已離線
+                if (
+                    !otherSocket ||
+                    otherSocket.readyState !== 1 ||
+                    !otherSocket.user
+                ) {
+
+                    socket.send(
+                        JSON.stringify({
+                            type: "call:error",
+                            reason: "OTHER_PARTY_OFFLINE"
+                        })
+                    );
+
+                    return;
+                }
+
+                // 只允許必要的 WebRTC payload
+                let signal = {
+                    type: data.type,
+                    call_id: callId
+                };
+
+                if (data.type === "call:webrtc-offer") {
+
+                    signal.offer = data.offer;
+
+                } else if (data.type === "call:webrtc-answer") {
+
+                    signal.answer = data.answer;
+
+                } else if (data.type === "call:webrtc-ice") {
+
+                    signal.candidate = data.candidate;
+                }
+
+                otherSocket.send(
+                    JSON.stringify(signal)
+                );
+
+                console.log(
+                    "[WebRTC] Relay:",
+                    data.type,
+                    "| call_id:",
+                    callId,
+                    "| from:",
+                    socket.user.username,
+                    "| to:",
+                    otherSocket.user.username
+                );
+
+                return;
+            }
+
             if (data.type === "call:hangup") {
 
                 const callId =
