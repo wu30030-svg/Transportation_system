@@ -92,8 +92,8 @@ async function authenticateToken(req, res, next) {
         // ========================================
 
         if (
-            activeSession.user_id !==
-            decoded.user_id
+            String(activeSession.user_id) !==
+            String(decoded.user_id)
         ) {
 
             return res.status(401).json({
