@@ -11,6 +11,13 @@ const lastUpdateElement =
 const accuracyElement =
     document.getElementById("accuracy");
 
+ShuttleGPS.init({
+    lastUpdateElement:
+        lastUpdateElement,
+
+    accuracyElement:
+        accuracyElement
+});
 
 // ========================================
 // API
@@ -18,14 +25,6 @@ const accuracyElement =
 
 const SHUTTLE_LOCATION_API =
     `${CONFIG.API_BASE_URL}/api/tracking/shuttle/location`;
-
-
-// ========================================
-// GPS State
-// ========================================
-
-let gpsWatchId = null;
-
 
 // ========================================
 // WebSocket State
@@ -47,238 +46,6 @@ let activeCallState = null;
 let callStartedAt = null;
 
 let callTimer = null;
-
-// ========================================
-// WebRTC State
-// ========================================
-
-let shuttlePeerConnection = null;
-let shuttleLocalStream = null;
-let shuttleRemoteStream = null;
-
-// WebRTC ICE Candidate 暫存佇列
-let pendingShuttleIceCandidates = [];
-
-// ========================================
-// GPS
-// ========================================
-
-function updateTime() {
-
-    const now = new Date();
-
-    lastUpdateElement.textContent =
-        now.toLocaleTimeString("zh-TW", {
-            hour12: false
-        });
-}
-
-
-async function sendLocationToBackend(position) {
-
-    const token = getAuthToken();
-
-    if (!token) {
-
-        console.error(
-            "[Shuttle GPS] 沒有登入 Token"
-        );
-
-        accuracyElement.textContent =
-            "未登入";
-
-        return;
-    }
-
-    const coords =
-        position.coords;
-
-    const payload = {
-
-        latitude:
-            coords.latitude,
-
-        longitude:
-            coords.longitude,
-
-        accuracy:
-            coords.accuracy,
-
-        speed:
-            coords.speed,
-
-        heading:
-            coords.heading,
-
-        recordedAt:
-            new Date().toISOString()
-    };
-
-
-    console.log(
-        "[Shuttle GPS] 準備送出",
-        payload
-    );
-
-
-    try {
-
-        const response =
-            await fetch(
-                SHUTTLE_LOCATION_API,
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json; charset=utf-8",
-
-                        "Authorization":
-                            `Bearer ${token}`
-                    },
-
-                    body:
-                        JSON.stringify(payload)
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message ||
-                "GPS 上傳失敗"
-            );
-        }
-
-
-        console.log(
-            "[Shuttle GPS] 上傳成功",
-            data
-        );
-
-
-        accuracyElement.textContent =
-            `±${Math.round(coords.accuracy)} m`;
-
-
-        updateTime();
-
-
-    } catch (error) {
-
-        console.error(
-            "[Shuttle GPS] 上傳失敗",
-            error
-        );
-
-
-        accuracyElement.textContent =
-            "傳送失敗";
-    }
-}
-
-
-function updateGPS(position) {
-
-    const coords =
-        position.coords;
-
-
-    console.log(
-        "[GPS]",
-        {
-            latitude:
-                coords.latitude,
-
-            longitude:
-                coords.longitude,
-
-            accuracy:
-                coords.accuracy,
-
-            speed:
-                coords.speed,
-
-            heading:
-                coords.heading
-        }
-    );
-
-
-    accuracyElement.textContent =
-        `±${Math.round(coords.accuracy)} m`;
-
-
-    updateTime();
-
-
-    sendLocationToBackend(
-        position
-    );
-}
-
-
-function handleGPSError(error) {
-
-    console.error(
-        "[GPS] 定位失敗",
-        error
-    );
-
-
-    accuracyElement.textContent =
-        "定位失敗";
-
-
-    lastUpdateElement.textContent =
-        "--:--:--";
-}
-
-
-function startGPS() {
-
-    if (!navigator.geolocation) {
-
-        console.error(
-            "[GPS] 此裝置不支援 Geolocation"
-        );
-
-
-        accuracyElement.textContent =
-            "不支援 GPS";
-
-
-        return;
-    }
-
-
-    console.log(
-        "[GPS] 開始取得定位"
-    );
-
-
-    gpsWatchId =
-        navigator.geolocation.watchPosition(
-            updateGPS,
-            handleGPSError,
-            {
-                enableHighAccuracy:
-                    true,
-
-                maximumAge:
-                    5000,
-
-                timeout:
-                    10000
-            }
-        );
-}
-
 
 // ========================================
 // Shuttle WebSocket
@@ -565,73 +332,29 @@ async function handleShuttleWebSocketMessage(data) {
         if (
             data.call_id !== activeCallId
         ) {
+
             console.warn(
                 "[WebRTC] ICE 不屬於目前通話:",
                 data.call_id
             );
+
             return;
         }
 
         if (
             !data.candidate
         ) {
+
             console.warn(
                 "[WebRTC] ICE Candidate 資料不存在"
             );
-            return;
-        }
-
-        // PeerConnection 還沒建立
-        if (
-            !shuttlePeerConnection
-        ) {
-
-            console.warn(
-                "[WebRTC] Driver PeerConnection 不存在，暫存 ICE"
-            );
-
-            pendingShuttleIceCandidates.push(
-                data.candidate
-            );
 
             return;
         }
 
-        // Remote Description 尚未設定
-        if (
-            !shuttlePeerConnection.remoteDescription
-        ) {
-
-            console.log(
-                "[WebRTC] Driver Remote Description 尚未設定，暫存 ICE"
-            );
-
-            pendingShuttleIceCandidates.push(
-                data.candidate
-            );
-
-            return;
-        }
-
-        try {
-
-            await shuttlePeerConnection.addIceCandidate(
-                new RTCIceCandidate(
-                    data.candidate
-                )
-            );
-
-            console.log(
-                "[WebRTC] Driver ICE Candidate 已加入"
-            );
-
-        } catch (error) {
-
-            console.error(
-                "[WebRTC] Driver 加入 ICE Candidate 失敗:",
-                error
-            );
-        }
+        await ShuttleWebRTC.handleIceCandidate(
+            data.candidate
+        );
 
         return;
     }
@@ -780,19 +503,7 @@ async function handleShuttleWebSocketMessage(data) {
             "[Shuttle WebSocket] 收到強制登出"
         );
 
-
-        if (
-            gpsWatchId !== null
-        ) {
-
-            navigator.geolocation.clearWatch(
-                gpsWatchId
-            );
-
-            gpsWatchId =
-                null;
-        }
-
+        ShuttleGPS.stop();
 
         if (
             shuttleWebSocket
@@ -845,7 +556,10 @@ async function handleShuttleWebRTCOffer(data) {
     );
 
 
-    if (!callId || !offer) {
+    if (
+        !callId ||
+        !offer
+    ) {
 
         console.warn(
             "[WebRTC] Offer 資料不完整"
@@ -869,239 +583,94 @@ async function handleShuttleWebRTCOffer(data) {
     }
 
 
-    // ========================================
-    // 建立 PeerConnection
-    // ========================================
-
-    shuttlePeerConnection = new RTCPeerConnection();
-
-    shuttlePeerConnection.onconnectionstatechange = () => {
-
-        console.log(
-            "[WebRTC] Driver Connection State:",
-            shuttlePeerConnection.connectionState
-        );
-
-    };
-
-    shuttlePeerConnection.oniceconnectionstatechange = () => {
-
-        console.log(
-            "[WebRTC] Driver ICE Connection State:",
-            shuttlePeerConnection.iceConnectionState
-        );
-
-    };
-
-    shuttlePeerConnection.onicecandidate =
-        event => {
-
-            if (!event.candidate) {
-                return;
-            }
-
-            console.log(
-                "[WebRTC] Driver ICE Candidate:",
-                event.candidate
-            );
-
-            if (
-                !shuttleWebSocket ||
-                shuttleWebSocket.readyState !==
-                WebSocket.OPEN
-            ) {
-
-                console.warn(
-                    "[WebRTC] WebSocket 尚未連線，無法傳送 ICE"
-                );
-
-                return;
-            }
-
-            shuttleWebSocket.send(
-                JSON.stringify({
-
-                    type:
-                        "call:webrtc-ice",
-
-                    call_id:
-                        callId,
-
-                    candidate:
-                        event.candidate
-
-                })
-            );
-
-        };
-
-    console.log(
-        "[WebRTC] Driver ICE Candidate handler 已建立"
-    );
-
-    console.log("[WebRTC] Driver PeerConnection 建立完成");
-
-
-    // ========================================
-    // 取得麥克風
-    // ========================================
-
     try {
 
-        shuttleLocalStream =
-            await navigator.mediaDevices.getUserMedia({
-                audio: true
-            });
+        await ShuttleWebRTC.handleOffer({
+            webSocket:
+                shuttleWebSocket,
+
+            callId:
+                callId,
+
+            offer:
+                offer,
+
+            onRemoteStream:
+                handleDriverRemoteStream
+        });
 
     } catch (error) {
 
         console.error(
-            "[WebRTC] Driver 無法取得麥克風:",
+            "[WebRTC] Driver 處理 Offer 失敗:",
             error
         );
 
-        return;
     }
+}
 
+// ========================================
+// WebRTC - Driver Remote Audio
+// ========================================
+
+function handleDriverRemoteStream(stream) {
 
     console.log(
-        "[WebRTC] Driver 麥克風取得成功"
+        "[WebRTC] Driver 收到 Monitor Remote Audio Stream"
     );
 
 
-    // ========================================
-    // 加入 Local Audio Track
-    // ========================================
-
-    shuttleLocalStream
-        .getTracks()
-        .forEach(
-            track => {
-
-                shuttlePeerConnection.addTrack(
-                    track,
-                    shuttleLocalStream
-                );
-
-            }
+    let audioElement =
+        document.getElementById(
+            "shuttle-remote-audio"
         );
 
 
-    console.log(
-        "[WebRTC] Driver Local audio track 已加入"
-    );
+    if (!audioElement) {
 
+        audioElement =
+            document.createElement(
+                "audio"
+            );
 
-    // ========================================
-    // 設定 Remote Offer
-    // ========================================
+        audioElement.id =
+            "shuttle-remote-audio";
 
-    await shuttlePeerConnection.setRemoteDescription(
-        new RTCSessionDescription(
-            offer
-        )
-    );
+        audioElement.autoplay =
+            true;
 
-    // 處理在 Remote Description 設定前收到的 ICE
-    if (
-        pendingShuttleIceCandidates.length > 0
-    ) {
+        audioElement.playsInline =
+            true;
 
-        console.log(
-            "[WebRTC] Driver 開始處理暫存 ICE:",
-            pendingShuttleIceCandidates.length
+        audioElement.style.display =
+            "none";
+
+        document.body.appendChild(
+            audioElement
         );
-
-        for (
-            const candidate of pendingShuttleIceCandidates
-        ) {
-
-            try {
-
-                await shuttlePeerConnection.addIceCandidate(
-                    new RTCIceCandidate(
-                        candidate
-                    )
-                );
-
-                console.log(
-                    "[WebRTC] Driver 暫存 ICE Candidate 已加入"
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "[WebRTC] Driver 加入暫存 ICE Candidate 失敗:",
-                    error
-                );
-            }
-        }
-
-        pendingShuttleIceCandidates = [];
-    }
-
-    console.log(
-        "[WebRTC] Driver Remote Description 已設定"
-    );
-
-
-    // ========================================
-    // 建立 Answer
-    // ========================================
-
-    const answer =
-        await shuttlePeerConnection.createAnswer();
-
-
-    await shuttlePeerConnection.setLocalDescription(
-        answer
-    );
-
-
-    console.log(
-        "[WebRTC] Driver Answer 建立完成:",
-        answer
-    );
-
-
-    // ========================================
-    // 傳送 Answer
-    // ========================================
-
-    if (
-        !shuttleWebSocket ||
-        shuttleWebSocket.readyState !==
-        WebSocket.OPEN
-    ) {
-
-        console.warn(
-            "[WebRTC] WebSocket 尚未連線"
-        );
-
-        return;
     }
 
 
-    shuttleWebSocket.send(
-        JSON.stringify({
+    audioElement.srcObject =
+        stream;
 
-            type:
-                "call:webrtc-answer",
 
-            call_id:
-                callId,
+    audioElement.play()
+        .then(() => {
 
-            answer:
-                shuttlePeerConnection.localDescription
+            console.log(
+                "[WebRTC] Driver Remote Audio 開始播放"
+            );
 
         })
-    );
+        .catch(error => {
 
+            console.warn(
+                "[WebRTC] Driver Remote Audio 播放失敗:",
+                error
+            );
 
-    console.log(
-        "[WebRTC] Driver Answer 已送出:",
-        callId
-    );
+        });
 }
 
 // ========================================
@@ -1767,81 +1336,11 @@ function closeCallWindow() {
 
     stopCallTimer();
 
-
     // ========================================
     // WebRTC Cleanup
     // ========================================
 
-    // ----------------------------------------
-    // 停止 Local Audio Tracks
-    // ----------------------------------------
-
-    if (shuttleLocalStream) {
-
-        shuttleLocalStream
-            .getTracks()
-            .forEach(track => {
-
-                track.stop();
-
-                console.log(
-                    "[WebRTC] Driver Local Audio Track 已停止"
-                );
-
-            });
-
-        shuttleLocalStream = null;
-    }
-
-
-    // ----------------------------------------
-    // 關閉 PeerConnection
-    // ----------------------------------------
-
-    if (shuttlePeerConnection) {
-
-        shuttlePeerConnection.close();
-
-        shuttlePeerConnection = null;
-
-        console.log(
-            "[WebRTC] Driver PeerConnection 已關閉"
-        );
-    }
-
-
-    // ----------------------------------------
-    // 清除 Remote Stream
-    // ----------------------------------------
-
-    if (shuttleRemoteStream) {
-
-        shuttleRemoteStream
-            .getTracks()
-            .forEach(track => {
-
-                track.stop();
-
-            });
-
-        shuttleRemoteStream = null;
-
-        console.log(
-            "[WebRTC] Driver Remote MediaStream 已清除"
-        );
-    }
-
-
-    // ----------------------------------------
-    // 清除 Pending ICE Candidates
-    // ----------------------------------------
-
-    pendingShuttleIceCandidates = [];
-
-    console.log(
-        "[WebRTC] Driver Pending ICE Candidates 已清除"
-    );
-
+    ShuttleWebRTC.cleanup();
 
     // ========================================
     // Call State Cleanup
@@ -1888,7 +1387,7 @@ function closeCallWindow() {
 // Start
 // ========================================
 
-startGPS();
+ShuttleGPS.start();
 
 connectShuttleWebSocket();
 
@@ -1918,18 +1417,7 @@ if (logoutButton) {
             // Stop GPS
             // ----------------------------------------
 
-            if (
-                gpsWatchId !== null
-            ) {
-
-                navigator.geolocation.clearWatch(
-                    gpsWatchId
-                );
-
-                gpsWatchId =
-                    null;
-            }
-
+            ShuttleGPS.stop();
 
             // ----------------------------------------
             // Close Call
