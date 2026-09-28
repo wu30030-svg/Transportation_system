@@ -32,21 +32,6 @@ const SHUTTLE_LOCATION_API =
 
 let shuttleWebSocket = null;
 
-
-// ========================================
-// Call State
-// ========================================
-
-let activeCallId = null;
-
-let activeCallTarget = null;
-
-let activeCallState = null;
-
-let callStartedAt = null;
-
-let callTimer = null;
-
 // ========================================
 // Shuttle WebSocket
 // ========================================
@@ -281,24 +266,18 @@ async function handleShuttleWebSocketMessage(data) {
         );
 
 
-        activeCallId =
-            data.call_id;
+        ShuttleCall.setCall({
+            callId:
+                data.call_id,
 
+            target:
+                data.caller || {},
 
-        activeCallTarget =
-            data.caller || {};
-
-
-        activeCallState =
-            "INCOMING";
-
-
-        callStartedAt =
-            null;
-
+            state:
+                "INCOMING"
+        });
 
         updateCallWindow();
-
 
         return;
     }
@@ -329,8 +308,12 @@ async function handleShuttleWebSocketMessage(data) {
             data.call_id
         );
 
+        const callState =
+            ShuttleCall.getState();
+
         if (
-            data.call_id !== activeCallId
+            data.call_id !==
+            callState.activeCallId
         ) {
 
             console.warn(
@@ -382,26 +365,29 @@ async function handleShuttleWebSocketMessage(data) {
          * 在未來擴充時可以共用。
          */
 
+        const callState =
+            ShuttleCall.getState();
+
         if (
             data.call_id ===
-            activeCallId
+            callState.activeCallId
         ) {
 
-            activeCallState =
-                "CONNECTED";
+            ShuttleCall.setState(
+                "CONNECTED"
+            );
 
 
-            if (!callStartedAt) {
+            if (!callState.callStartedAt) {
 
-                callStartedAt =
-                    Date.now();
+                ShuttleCall.setStarted();
 
             }
 
 
             updateCallWindow();
 
-            startCallTimer();
+            ShuttleCall.startTimer();
         }
 
 
@@ -424,13 +410,14 @@ async function handleShuttleWebSocketMessage(data) {
         );
 
 
+        const callState =
+            ShuttleCall.getState();
+
         if (
             data.call_id ===
-            activeCallId
+            callState.activeCallId
         ) {
-
             closeCallWindow();
-
         }
 
 
@@ -452,17 +439,16 @@ async function handleShuttleWebSocketMessage(data) {
             data
         );
 
+        const callState =
+            ShuttleCall.getState();
 
         if (
-            !activeCallId ||
+            !callState.activeCallId ||
             data.call_id ===
-            activeCallId
+            callState.activeCallId
         ) {
-
             closeCallWindow();
-
         }
-
 
         return;
     }
@@ -569,9 +555,12 @@ async function handleShuttleWebRTCOffer(data) {
     }
 
 
+    const callState =
+        ShuttleCall.getState();
+
     if (
         callId !==
-        activeCallId
+        callState.activeCallId
     ) {
 
         console.warn(
@@ -890,8 +879,11 @@ function updateCallWindow() {
     }
 
 
+    const callState =
+        ShuttleCall.getState();
+
     const target =
-        activeCallTarget || {};
+        callState.activeCallTarget || {};
 
 
     if (nameElement) {
@@ -925,7 +917,7 @@ function updateCallWindow() {
     // ========================================
 
     if (
-        activeCallState ===
+        callState.activeCallState ===
         "INCOMING"
     ) {
 
@@ -1018,7 +1010,7 @@ function updateCallWindow() {
     // ========================================
 
     if (
-        activeCallState ===
+        callState.activeCallState ===
         "CONNECTED"
     ) {
 
@@ -1082,86 +1074,16 @@ function updateCallWindow() {
     );
 }
 
-
-// ========================================
-// Call Timer
-// ========================================
-
-function startCallTimer() {
-
-    stopCallTimer();
-
-
-    callTimer =
-        setInterval(
-            () => {
-
-                if (!callStartedAt) {
-
-                    return;
-
-                }
-
-
-                const elapsed =
-                    Math.floor(
-                        (
-                            Date.now() -
-                            callStartedAt
-                        ) / 1000
-                    );
-
-
-                const minutes =
-                    Math.floor(
-                        elapsed / 60
-                    );
-
-
-                const seconds =
-                    elapsed % 60;
-
-
-                const timerElement =
-                    document.getElementById(
-                        "shuttle-call-timer"
-                    );
-
-
-                if (timerElement) {
-
-                    timerElement.textContent =
-                        `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-
-                }
-
-            },
-            1000
-        );
-}
-
-
-function stopCallTimer() {
-
-    if (callTimer) {
-
-        clearInterval(
-            callTimer
-        );
-
-        callTimer =
-            null;
-    }
-}
-
-
 // ========================================
 // Accept Call
 // ========================================
 
 function acceptIncomingCall() {
 
-    if (!activeCallId) {
+    const callState =
+        ShuttleCall.getState();
+
+    if (!callState.activeCallId) {
 
         console.warn(
             "[Shuttle Communication] 沒有可接聽的來電"
@@ -1187,7 +1109,7 @@ function acceptIncomingCall() {
 
     console.log(
         "[Shuttle Communication] 接聽:",
-        activeCallId
+        callState.activeCallId
     );
 
 
@@ -1198,7 +1120,7 @@ function acceptIncomingCall() {
                 "call:accept",
 
             call_id:
-                activeCallId
+                callState.activeCallId
         })
     );
 
@@ -1209,17 +1131,16 @@ function acceptIncomingCall() {
      * 所以這裡直接進入 UI 的 CONNECTED 狀態。
      */
 
-    activeCallState =
-        "CONNECTED";
+    ShuttleCall.setState(
+        "CONNECTED"
+    );
 
-
-    callStartedAt =
-        Date.now();
+    ShuttleCall.setStarted();
 
 
     updateCallWindow();
 
-    startCallTimer();
+    ShuttleCall.startTimer();
 }
 
 
@@ -1229,7 +1150,10 @@ function acceptIncomingCall() {
 
 function rejectIncomingCall() {
 
-    if (!activeCallId) {
+    const callState =
+        ShuttleCall.getState();
+
+    if (!callState.activeCallId) {
 
         console.warn(
             "[Shuttle Communication] 沒有可拒絕的來電"
@@ -1255,7 +1179,7 @@ function rejectIncomingCall() {
 
     console.log(
         "[Shuttle Communication] 拒絕:",
-        activeCallId
+        callState.activeCallId
     );
 
 
@@ -1266,7 +1190,7 @@ function rejectIncomingCall() {
                 "call:reject",
 
             call_id:
-                activeCallId
+                callState.activeCallId
         })
     );
 
@@ -1281,7 +1205,10 @@ function rejectIncomingCall() {
 
 function hangupActiveCall() {
 
-    if (!activeCallId) {
+    const callState =
+        ShuttleCall.getState();
+
+    if (!callState.activeCallId) {
 
         closeCallWindow();
 
@@ -1297,7 +1224,7 @@ function hangupActiveCall() {
 
         console.log(
             "[Shuttle Communication] 掛斷:",
-            activeCallId
+            callState.activeCallId
         );
 
 
@@ -1308,7 +1235,7 @@ function hangupActiveCall() {
                     "call:hangup",
 
                 call_id:
-                    activeCallId
+                    callState.activeCallId
             })
         );
 
@@ -1331,12 +1258,6 @@ function hangupActiveCall() {
 function closeCallWindow() {
 
     // ========================================
-    // 停止通話計時器
-    // ========================================
-
-    stopCallTimer();
-
-    // ========================================
     // WebRTC Cleanup
     // ========================================
 
@@ -1346,21 +1267,7 @@ function closeCallWindow() {
     // Call State Cleanup
     // ========================================
 
-    activeCallId =
-        null;
-
-
-    activeCallTarget =
-        null;
-
-
-    activeCallState =
-        null;
-
-
-    callStartedAt =
-        null;
-
+    ShuttleCall.clearCall();
 
     // ========================================
     // 隱藏通話視窗
@@ -1423,7 +1330,10 @@ if (logoutButton) {
             // Close Call
             // ----------------------------------------
 
-            if (activeCallId) {
+            const callState =
+                ShuttleCall.getState();
+
+            if (callState.activeCallId) {
 
                 hangupActiveCall();
 
