@@ -14,8 +14,6 @@ const SHUTTLE_REFRESH_INTERVAL = 5000;
 // State
 // ========================================
 
-let shuttleRefreshTimer = null;
-
 let shuttleLocations = [];
 
 // ========================================
@@ -841,91 +839,26 @@ async function startShuttleWebRTCAsCaller(
 }
 
 // ========================================
-// Fetch Shuttle Locations
+// Tracking
 // ========================================
 
-async function refreshShuttleLocations() {
+function handleShuttleLocationsUpdated(
+    locations
+) {
 
-    const token = getAuthToken();
+    shuttleLocations =
+        Array.isArray(locations)
+            ? locations
+            : [];
 
-    if (!token) {
+    ShuttleMonitorMap.renderLocations(
+        shuttleLocations
+    );
 
-        console.error(
-            "[Shuttle Monitor] 沒有登入 Token"
-        );
+    renderVehiclePanel();
 
-        return;
-    }
+    renderCommunicationPanel();
 
-    try {
-
-        const response = await fetch(
-            SHUTTLE_LOCATION_API,
-            {
-                method: "GET",
-
-                headers: {
-                    "Authorization":
-                        `Bearer ${token}`
-                }
-            }
-        );
-
-        const data =
-            await response.json();
-
-        if (response.status === 401) {
-
-            console.warn(
-                "[Shuttle Monitor] Token 已失效"
-            );
-
-            if (
-                typeof handleUnauthorized ===
-                "function"
-            ) {
-
-                handleUnauthorized();
-
-            }
-
-            return;
-        }
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message ||
-                "無法取得接駁車位置"
-            );
-        }
-
-        const locations =
-            Array.isArray(data.data)
-                ? data.data
-                : [];
-
-        shuttleLocations = locations;
-
-        console.log(
-            `[Shuttle Monitor] 收到 ${locations.length} 筆定位資料`
-        );
-
-        ShuttleMonitorMap.renderLocations(
-            locations
-        );
-
-        renderVehiclePanel();
-
-        renderCommunicationPanel();
-
-    } catch (error) {
-
-        console.error(
-            "[Shuttle Monitor] 取得定位失敗:",
-            error
-        );
-    }
 }
 
 // ========================================
@@ -2320,13 +2253,14 @@ async function waitForGoogleMaps() {
 
         await ShuttleMonitorMap.init();
 
-        await refreshShuttleLocations();
+        ShuttleMonitorTracking.configure({
+            api: SHUTTLE_LOCATION_API,
+            interval: SHUTTLE_REFRESH_INTERVAL,
+            locationsHandler:
+                handleShuttleLocationsUpdated
+        });
 
-        shuttleRefreshTimer =
-            setInterval(
-                refreshShuttleLocations,
-                SHUTTLE_REFRESH_INTERVAL
-            );
+        ShuttleMonitorTracking.start();
 
         return;
     }
@@ -2350,15 +2284,7 @@ window.addEventListener(
     "beforeunload",
     () => {
 
-        if (shuttleRefreshTimer) {
-
-            clearInterval(
-                shuttleRefreshTimer
-            );
-
-            shuttleRefreshTimer = null;
-        }
-
+        ShuttleMonitorTracking.cleanup();
 
         if (shuttleWebSocket) {
 
@@ -2386,15 +2312,7 @@ if (logoutButton) {
         "click",
         async () => {
 
-            if (shuttleRefreshTimer) {
-
-                clearInterval(
-                    shuttleRefreshTimer
-                );
-
-                shuttleRefreshTimer = null;
-            }
-
+            ShuttleMonitorTracking.cleanup();
 
             if (shuttleWebSocket) {
 
@@ -2403,9 +2321,7 @@ if (logoutButton) {
                 shuttleWebSocket = null;
             }
 
-
             await logout();
-
 
             window.location.href =
                 "../index.html";
