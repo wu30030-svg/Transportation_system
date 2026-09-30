@@ -1,5 +1,3 @@
-console.log("[Shuttle Monitor] A 路線監控端啟動");
-
 // ========================================
 // Configuration
 // ========================================
@@ -9,6 +7,12 @@ const SHUTTLE_LOCATION_API =
 
 const SHUTTLE_REFRESH_INTERVAL = 5000;
 
+const SHUTTLE_ROUTES_API =
+    `${CONFIG.API_BASE_URL}/api/shuttle/routes`;
+
+const SHUTTLE_ROUTE_GEOMETRY_API =
+    `${CONFIG.API_BASE_URL}/api/shuttle/routes`;
+
 
 // ========================================
 // State
@@ -17,10 +21,211 @@ const SHUTTLE_REFRESH_INTERVAL = 5000;
 let shuttleLocations = [];
 
 // ========================================
+// Monitor Route Configuration
+// ========================================
+
+const SHUTTLE_MONITOR_ROUTES = {
+
+    "營區開放_A路線": {
+        routeCode: "SUCCESS",
+        routeName: "成功線",
+        color: "GREEN"
+    },
+
+    "營區開放_B路線": {
+        routeCode: "XINWURI",
+        routeName: "新烏日線",
+        color: "BLUE"
+    },
+
+    "營區開放_C路線": {
+        routeCode: "SHUINAN",
+        routeName: "水湳經貿線",
+        color: "YELLOW"
+    }
+
+};
+
+// ========================================
+// Monitor Route State
+// ========================================
+
+let shuttleMonitorUser = null;
+let shuttleMonitorRoute = null;
+let shuttleMonitorRouteConfig = null;
+let shuttleMonitorRouteData = null;
+
+// ========================================
 // WebSocket State
 // ========================================
 
 let shuttleOnlineUsers = [];
+
+async function loadShuttleMonitorRoute() {
+
+    if (!shuttleMonitorRouteConfig) {
+
+        console.warn(
+            "[Shuttle Monitor] 尚未取得路線設定"
+        );
+
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                SHUTTLE_ROUTES_API
+            );
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+
+        }
+
+        const result =
+            await response.json();
+
+        if (
+            !result.success ||
+            !Array.isArray(result.data)
+        ) {
+
+            throw new Error(
+                "路線資料格式錯誤"
+            );
+
+        }
+
+        shuttleMonitorRouteData =
+            result.data.find(
+                route =>
+                    route.routeCode ===
+                    shuttleMonitorRouteConfig.routeCode
+            ) || null;
+
+
+        if (!shuttleMonitorRouteData) {
+
+            console.warn(
+                "[Shuttle Monitor] 找不到目前監控路線:",
+                shuttleMonitorRouteConfig.routeCode
+            );
+
+            return;
+        }
+
+
+        console.log(
+            "[Shuttle Monitor] 路線資料已取得:",
+            shuttleMonitorRouteData
+        );
+
+        console.log(
+            "[Shuttle Monitor] 去程站點:",
+            shuttleMonitorRouteData.outbound
+        );
+
+        console.log(
+            "[Shuttle Monitor] 回程站點:",
+            shuttleMonitorRouteData.inbound
+        );
+
+        ShuttleMonitorMap.setRoute(
+            shuttleMonitorRouteData
+        );
+
+    } catch (error) {
+
+        console.error(
+            "[Shuttle Monitor] 路線資料取得失敗:",
+            error
+        );
+
+    }
+
+}
+
+async function loadShuttleMonitorRouteGeometry() {
+
+    if (
+        !shuttleMonitorRouteConfig ||
+        !shuttleMonitorRouteConfig.routeCode
+    ) {
+
+        console.warn(
+            "[Shuttle Monitor] 尚未取得 Geometry 路線設定"
+        );
+
+        return;
+    }
+
+    const routeCode =
+        shuttleMonitorRouteConfig.routeCode;
+
+    const direction =
+        "outbound";
+
+    const url =
+        `${SHUTTLE_ROUTE_GEOMETRY_API}/${routeCode}/geometry?direction=${direction}`;
+
+    try {
+
+        console.log(
+            "[Shuttle Monitor] 載入路線 Geometry:",
+            routeCode,
+            direction
+        );
+
+        const response =
+            await fetch(url);
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+
+        }
+
+        const result =
+            await response.json();
+
+        if (
+            !result.success ||
+            !result.data ||
+            !result.data.geometry
+        ) {
+
+            throw new Error(
+                "Geometry 資料格式錯誤"
+            );
+
+        }
+
+        console.log(
+            "[Shuttle Monitor] Geometry 已取得:",
+            result.data
+        );
+
+        ShuttleMonitorMap.setGeometry(
+            result.data.geometry
+        );
+
+    } catch (error) {
+
+        console.error(
+            "[Shuttle Monitor] Geometry 取得失敗:",
+            error
+        );
+
+    }
+
+}
 
 // ========================================
 // WebSocket Connection
@@ -74,6 +279,35 @@ async function handleShuttleWebSocketMessage(data) {
             "[Shuttle WebSocket] Authentication success:",
             data.user
         );
+
+        // ========================================
+        // Monitor Identity
+        // ========================================
+
+        shuttleMonitorUser =
+            data.user || null;
+
+        shuttleMonitorRoute =
+            data.user?.access_context || null;
+
+        shuttleMonitorRouteConfig =
+            SHUTTLE_MONITOR_ROUTES[
+            shuttleMonitorRoute
+            ] || null;
+
+        console.log(
+            "[Shuttle Monitor] 監控路線:",
+            shuttleMonitorRoute
+        );
+
+        console.log(
+            "[Shuttle Monitor] 路線設定:",
+            shuttleMonitorRouteConfig
+        );
+
+        loadShuttleMonitorRoute();
+
+        loadShuttleMonitorRouteGeometry();
 
         ShuttleMonitorWebSocket.send({
             type: "online:list"
