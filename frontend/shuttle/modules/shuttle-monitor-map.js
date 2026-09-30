@@ -308,7 +308,7 @@ window.ShuttleMonitorMap = (() => {
 
     function setGeometry(geometry) {
 
-        if (!map) {
+        if (!shuttleMap) {
             console.warn(
                 "[Shuttle Monitor Map] Map 尚未初始化"
             );
@@ -392,7 +392,7 @@ window.ShuttleMonitorMap = (() => {
 
             });
 
-        routePolyline.setMap(map);
+        routePolyline.setMap(shuttleMap);
 
         console.log(
             "[Shuttle Monitor Map] Geometry 已繪製:",
