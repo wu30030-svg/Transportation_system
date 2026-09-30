@@ -768,7 +768,9 @@ Google Maps UI 微調
 
     padding: 20px;
 
-    background: rgba(0, 0, 0, 0.58);
+    background: rgba(0, 0, 0, 0.62);
+
+    backdrop-filter: blur(3px);
 
     pointer-events: auto;
 }
@@ -786,7 +788,7 @@ Google Maps UI 微調
 .shuttle-call-card {
     width: min(360px, calc(100vw - 40px));
 
-    padding: 28px 24px 24px;
+    padding: 30px 24px 24px;
 
     border: 1px solid #2b333d;
     border-radius: 12px;
@@ -794,7 +796,8 @@ Google Maps UI 微調
     background: #11161d;
 
     box-shadow:
-        0 20px 50px rgba(0, 0, 0, 0.45);
+        0 20px 50px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.02);
 
     text-align: center;
 }
@@ -805,8 +808,8 @@ Google Maps UI 微調
 ======================================== */
 
 .shuttle-call-icon {
-    width: 52px;
-    height: 52px;
+    width: 56px;
+    height: 56px;
 
     margin: 0 auto 16px;
 
@@ -814,12 +817,46 @@ Google Maps UI 微調
     align-items: center;
     justify-content: center;
 
-    border: 1px solid rgba(242, 193, 78, 0.28);
+    border: 1px solid rgba(242, 193, 78, 0.30);
     border-radius: 50%;
 
     background: rgba(242, 193, 78, 0.08);
 
-    font-size: 22px;
+    font-size: 23px;
+
+    box-shadow:
+        0 0 0 5px rgba(242, 193, 78, 0.035);
+}
+
+
+/*
+ * 呼叫建立後的輕微提示動畫。
+ * 不做持續快速動畫，避免監控畫面干擾。
+ */
+
+.shuttle-call-window:not(.hidden) .shuttle-call-icon {
+    animation:
+        shuttle-call-pulse 2.2s ease-in-out infinite;
+}
+
+
+@keyframes shuttle-call-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+
+        box-shadow:
+            0 0 0 5px rgba(242, 193, 78, 0.035);
+    }
+
+    50% {
+        transform: scale(1.035);
+
+        box-shadow:
+            0 0 0 8px rgba(242, 193, 78, 0.025);
+    }
+
 }
 
 
@@ -828,11 +865,15 @@ Google Maps UI 微調
 ======================================== */
 
 .shuttle-call-state {
-    font-size: 12px;
+    font-family:
+        "JetBrains Mono",
+        monospace;
+
+    font-size: 11px;
 
     font-weight: 700;
 
-    letter-spacing: 0.08em;
+    letter-spacing: 0.10em;
 
     color: #f2c14e;
 }
@@ -850,13 +891,17 @@ Google Maps UI 微調
     font-weight: 700;
 
     color: #f2f4f7;
+
+    line-height: 1.3;
 }
 
 
 .shuttle-call-number {
     margin-top: 5px;
 
-    font-family: "JetBrains Mono", monospace;
+    font-family:
+        "JetBrains Mono",
+        monospace;
 
     font-size: 11px;
 
@@ -880,7 +925,13 @@ Google Maps UI 微調
 .shuttle-call-status {
     margin-top: 20px;
 
-    padding: 10px 12px;
+    min-height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 9px 12px;
 
     border: 1px solid #242b34;
     border-radius: 7px;
@@ -888,6 +939,8 @@ Google Maps UI 微調
     background: #0b0f14;
 
     font-size: 11px;
+
+    line-height: 1.4;
 
     color: #aeb6c0;
 }
@@ -900,16 +953,30 @@ Google Maps UI 微調
 .shuttle-call-timer {
     margin-top: 14px;
 
-    font-family: "JetBrains Mono", monospace;
+    font-family:
+        "JetBrains Mono",
+        monospace;
 
-    font-size: 22px;
+    font-size: 24px;
 
     font-weight: 700;
 
     letter-spacing: 0.08em;
 
-    color: #f2f4f7;
+    color: #626c78;
+
+    font-variant-numeric: tabular-nums;
 }
+
+
+/*
+ * CONNECTED 狀態下計時器醒目。
+ *
+ * 目前 JS 沒有替 timer 加 class，
+ * 因此透過 Call Window 內的 state 狀態文字
+ * 搭配 :has() 判斷。
+ */
+
 
 
 /* ========================================
@@ -919,11 +986,11 @@ Google Maps UI 微調
 .shuttle-call-hangup {
     width: 100%;
 
-    height: 42px;
+    height: 44px;
 
     margin-top: 22px;
 
-    border: 1px solid rgba(224, 82, 82, 0.4);
+    border: 1px solid rgba(224, 82, 82, 0.40);
     border-radius: 7px;
 
     background: rgba(224, 82, 82, 0.10);
@@ -934,11 +1001,14 @@ Google Maps UI 微調
 
     font-weight: 700;
 
+    letter-spacing: 0.04em;
+
     cursor: pointer;
 
     transition:
         background 0.18s ease,
-        border-color 0.18s ease;
+        border-color 0.18s ease,
+        transform 0.08s ease;
 }
 
 
@@ -951,6 +1021,8 @@ Google Maps UI 微調
 
 .shuttle-call-hangup:active {
     background: rgba(224, 82, 82, 0.24);
+
+    transform: scale(0.985);
 }
 
 
@@ -960,14 +1032,49 @@ Google Maps UI 微調
 
 @media (max-width: 520px) {
 
+    .shuttle-call-window {
+        padding: 16px;
+    }
+
+
     .shuttle-call-card {
         width: calc(100vw - 32px);
 
-        padding: 24px 20px 20px;
+        padding: 26px 20px 20px;
+
+        border-radius: 11px;
     }
+
+
+    .shuttle-call-icon {
+        width: 52px;
+        height: 52px;
+
+        margin-bottom: 14px;
+
+        font-size: 21px;
+    }
+
 
     .shuttle-call-name {
         font-size: 18px;
+    }
+
+
+    .shuttle-call-status {
+        margin-top: 18px;
+    }
+
+
+    .shuttle-call-timer {
+        font-size: 22px;
+    }
+
+
+    .shuttle-call-hangup {
+        height: 44px;
+
+        margin-top: 20px;
     }
 
 }

@@ -443,6 +443,14 @@ wss.on("connection", (socket) => {
                     status: "RINGING"
                 });
 
+                // 通知呼叫方：電話已建立
+                socket.send(
+                    JSON.stringify({
+                        type: "call:started",
+                        call_id: callId
+                    })
+                );
+
                 // 傳送來電通知
                 targetSocket.send(
                     JSON.stringify({

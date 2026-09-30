@@ -123,6 +123,56 @@ async function handleShuttleWebSocketMessage(data) {
     }
 
     // ========================================
+    // Call Started
+    // ========================================
+
+    if (data.type === "call:started") {
+
+        console.log(
+            "[Shuttle Communication] 通話已建立:",
+            data
+        );
+
+        if (!data.call_id) {
+
+            console.warn(
+                "[Shuttle Communication] call:started 缺少 call_id"
+            );
+
+            return;
+        }
+
+        const currentCallState =
+            ShuttleCall.getState();
+
+        if (!currentCallState.activeCallTarget) {
+
+            console.warn(
+                "[Shuttle Communication] 找不到目前通話目標"
+            );
+
+            return;
+        }
+
+        ShuttleCall.setCall({
+
+            callId:
+                data.call_id,
+
+            target:
+                currentCallState.activeCallTarget,
+
+            state:
+                "CALLING"
+
+        });
+
+        updateCallWindow();
+
+        return;
+    }
+
+    // ========================================
     // Call Accepted
     // ========================================
 
