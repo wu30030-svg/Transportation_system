@@ -20,8 +20,6 @@ let shuttleLocations = [];
 // WebSocket State
 // ========================================
 
-let shuttleWebSocket = null;
-
 let shuttleOnlineUsers = [];
 
 // ========================================
@@ -66,132 +64,24 @@ function connectShuttleWebSocket() {
         return;
     }
 
-    if (
-        shuttleWebSocket &&
-        (
-            shuttleWebSocket.readyState ===
-            WebSocket.OPEN ||
-            shuttleWebSocket.readyState ===
-            WebSocket.CONNECTING
-        )
-    ) {
-
-        return;
-    }
-
     const wsBaseUrl =
-        CONFIG.API_BASE_URL.replace(
-            /^http/,
-            "ws"
-        );
+        CONFIG.API_BASE_URL.replace(/^http/, "ws");
 
     const wsUrl =
         `${wsBaseUrl}/ws`;
 
-    console.log(
-        "[Shuttle WebSocket] Connecting:",
-        wsUrl
-    );
+    ShuttleMonitorWebSocket.connect({
 
-    shuttleWebSocket =
-        new WebSocket(wsUrl);
+        url: wsUrl,
 
+        token,
 
-    // ========================================
-    // Connected
-    // ========================================
+        messageHandler:
+            handleShuttleWebSocketMessage
 
-    shuttleWebSocket.addEventListener(
-        "open",
-        () => {
+    });
 
-            console.log(
-                "[Shuttle WebSocket] Connected"
-            );
-
-            shuttleWebSocket.send(
-                JSON.stringify({
-                    type: "auth",
-                    token
-                })
-            );
-
-        }
-    );
-
-
-    // ========================================
-    // Message
-    // ========================================
-
-    shuttleWebSocket.addEventListener(
-        "message",
-        event => {
-
-            try {
-
-                const data =
-                    JSON.parse(
-                        event.data
-                    );
-
-                console.log(
-                    "[Shuttle WebSocket] <= ",
-                    data
-                );
-
-                handleShuttleWebSocketMessage(
-                    data
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "[Shuttle WebSocket] 訊息解析失敗:",
-                    error
-                );
-
-            }
-
-        }
-    );
-
-
-    // ========================================
-    // Error
-    // ========================================
-
-    shuttleWebSocket.addEventListener(
-        "error",
-        error => {
-
-            console.error(
-                "[Shuttle WebSocket] Error:",
-                error
-            );
-
-        }
-    );
-
-
-    // ========================================
-    // Close
-    // ========================================
-
-    shuttleWebSocket.addEventListener(
-        "close",
-        () => {
-
-            console.log(
-                "[Shuttle WebSocket] Closed"
-            );
-
-            shuttleWebSocket = null;
-
-        }
-    );
 }
-
 
 // ========================================
 // WebSocket Message Handler
@@ -210,11 +100,9 @@ async function handleShuttleWebSocketMessage(data) {
             data.user
         );
 
-        shuttleWebSocket.send(
-            JSON.stringify({
-                type: "online:list"
-            })
-        );
+        ShuttleMonitorWebSocket.send({
+            type: "online:list"
+        });
 
         return;
     }
@@ -619,11 +507,7 @@ async function startShuttleWebRTCAsCaller(
                 event.candidate
             );
 
-            if (
-                !shuttleWebSocket ||
-                shuttleWebSocket.readyState !==
-                WebSocket.OPEN
-            ) {
+            if (!ShuttleMonitorWebSocket.isConnected()) {
 
                 console.warn(
                     "[WebRTC] WebSocket 尚未連線，無法傳送 ICE"
@@ -632,20 +516,18 @@ async function startShuttleWebRTCAsCaller(
                 return;
             }
 
-            shuttleWebSocket.send(
-                JSON.stringify({
+            ShuttleMonitorWebSocket.send({
 
-                    type:
-                        "call:webrtc-ice",
+                type:
+                    "call:webrtc-ice",
 
-                    call_id:
-                        callId,
+                call_id:
+                    callId,
 
-                    candidate:
-                        event.candidate
+                candidate:
+                    event.candidate
 
-                })
-            );
+            });
 
         };
 
@@ -802,11 +684,7 @@ async function startShuttleWebRTCAsCaller(
     // 傳送 Offer
     // ========================================
 
-    if (
-        !shuttleWebSocket ||
-        shuttleWebSocket.readyState !==
-        WebSocket.OPEN
-    ) {
+    if (!ShuttleMonitorWebSocket.isConnected()) {
 
         console.warn(
             "[WebRTC] WebSocket 尚未連線"
@@ -816,7 +694,7 @@ async function startShuttleWebRTCAsCaller(
     }
 
 
-    shuttleWebSocket.send(
+    ShuttleMonitorWebSocket.send(
         JSON.stringify({
 
             type:
@@ -1430,11 +1308,7 @@ function hangupActiveCall() {
     }
 
 
-    if (
-        !shuttleWebSocket ||
-        shuttleWebSocket.readyState !==
-        WebSocket.OPEN
-    ) {
+    if (!ShuttleMonitorWebSocket.isConnected()) {
 
         console.warn(
             "[Shuttle Communication] WebSocket 未連線"
@@ -1450,17 +1324,15 @@ function hangupActiveCall() {
     );
 
 
-    shuttleWebSocket.send(
-        JSON.stringify({
+    ShuttleMonitorWebSocket.send({
 
-            type:
-                "call:hangup",
+        type:
+            "call:hangup",
 
-            call_id:
-                activeCallId
+        call_id:
+            activeCallId
 
-        })
-    );
+    });
 
 
     closeCallWindow();
@@ -1678,10 +1550,7 @@ function bindCommunicationCallButtons() {
                      * 確認 WebSocket
                      */
 
-                    if (
-                        !shuttleWebSocket ||
-                        shuttleWebSocket.readyState !== WebSocket.OPEN
-                    ) {
+                    if (!ShuttleMonitorWebSocket.isConnected()) {
 
                         console.warn(
                             "[Shuttle Communication] WebSocket 尚未連線"
@@ -1695,12 +1564,10 @@ function bindCommunicationCallButtons() {
                      * 發送通話請求
                      */
 
-                    shuttleWebSocket.send(
-                        JSON.stringify({
-                            type: "call",
-                            target_user_id: targetUserId
-                        })
-                    );
+                    ShuttleMonitorWebSocket.send({
+                        type: "call",
+                        target_user_id: targetUserId
+                    });
 
 
                     console.log(
@@ -2286,12 +2153,7 @@ window.addEventListener(
 
         ShuttleMonitorTracking.cleanup();
 
-        if (shuttleWebSocket) {
-
-            shuttleWebSocket.close();
-
-            shuttleWebSocket = null;
-        }
+        ShuttleMonitorWebSocket.close();
 
     }
 );
@@ -2314,12 +2176,7 @@ if (logoutButton) {
 
             ShuttleMonitorTracking.cleanup();
 
-            if (shuttleWebSocket) {
-
-                shuttleWebSocket.close();
-
-                shuttleWebSocket = null;
-            }
+            ShuttleMonitorWebSocket.close();
 
             await logout();
 
