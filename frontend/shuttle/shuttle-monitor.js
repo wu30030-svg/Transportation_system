@@ -23,31 +23,6 @@ let shuttleLocations = [];
 let shuttleOnlineUsers = [];
 
 // ========================================
-// Call State
-// ========================================
-
-let activeCallId = null;
-
-let activeCallTarget = null;
-
-let activeCallState = null;
-
-let callStartedAt = null;
-
-let callTimer = null;
-
-// ========================================
-// WebRTC State
-// ========================================
-
-let shuttlePeerConnection = null;
-let shuttleLocalStream = null;
-let shuttleRemoteStream = null;
-
-// WebRTC ICE Candidate 暫存佇列
-let pendingShuttleIceCandidates = [];
-
-// ========================================
 // WebSocket Connection
 // ========================================
 
@@ -148,6 +123,71 @@ async function handleShuttleWebSocketMessage(data) {
     }
 
     // ========================================
+    // Call Accepted
+    // ========================================
+
+    if (data.type === "call:accepted") {
+
+        console.log(
+            "[Shuttle Communication] 對方已接聽:",
+            data
+        );
+
+
+        if (!data.call_id) {
+
+            console.warn(
+                "[Shuttle Communication] call:accepted 缺少 call_id"
+            );
+
+            return;
+        }
+
+
+        const currentCallState =
+            ShuttleCall.getState();
+
+
+        if (!currentCallState.activeCallTarget) {
+
+            console.warn(
+                "[Shuttle Communication] 找不到目前通話目標"
+            );
+
+            return;
+        }
+
+
+        ShuttleCall.setCall({
+
+            callId:
+                data.call_id,
+
+            target:
+                currentCallState.activeCallTarget,
+
+            state:
+                "CONNECTED"
+
+        });
+
+
+        ShuttleCall.setStarted();
+
+        updateCallWindow();
+
+        ShuttleCall.startTimer();
+
+
+        startShuttleWebRTCAsCaller(
+            data.call_id
+        );
+
+
+        return;
+    }
+
+    // ========================================
     // WebRTC Answer
     // ========================================
 
@@ -173,109 +213,44 @@ async function handleShuttleWebSocketMessage(data) {
             data.call_id
         );
 
+
+        const callState =
+            ShuttleCall.getState();
+
+
         if (
-            data.call_id !== activeCallId
+            data.call_id !==
+            callState.activeCallId
         ) {
+
             console.warn(
                 "[WebRTC] ICE 不屬於目前通話:",
                 data.call_id
             );
+
             return;
         }
+
 
         if (
             !data.candidate
         ) {
+
             console.warn(
                 "[WebRTC] ICE Candidate 資料不存在"
             );
-            return;
-        }
-
-        if (
-            !shuttlePeerConnection
-        ) {
-
-            console.warn(
-                "[WebRTC] Monitor PeerConnection 不存在，暫存 ICE"
-            );
-
-            pendingShuttleIceCandidates.push(
-                data.candidate
-            );
 
             return;
         }
 
-        if (
-            !shuttlePeerConnection.remoteDescription
-        ) {
 
-            console.log(
-                "[WebRTC] Monitor Remote Description 尚未設定，暫存 ICE"
-            );
+        await ShuttleWebRTC.handleIceCandidate(
+            data.candidate
+        );
 
-            pendingShuttleIceCandidates.push(
-                data.candidate
-            );
-
-            return;
-        }
-
-        try {
-
-            await shuttlePeerConnection.addIceCandidate(
-                new RTCIceCandidate(
-                    data.candidate
-                )
-            );
-
-            console.log(
-                "[WebRTC] Monitor ICE Candidate 已加入"
-            );
-
-        } catch (error) {
-
-            console.error(
-                "[WebRTC] Monitor 加入 ICE Candidate 失敗:",
-                error
-            );
-        }
 
         return;
     }
-
-    // ========================================
-    // Call Accepted
-    // ========================================
-
-    if (data.type === "call:accepted") {
-
-        console.log(
-            "[Shuttle Communication] 對方已接聽:",
-            data
-        );
-
-        activeCallId =
-            data.call_id;
-
-        activeCallState =
-            "CONNECTED";
-
-        callStartedAt =
-            Date.now();
-
-        updateCallWindow();
-
-        startCallTimer();
-
-        startShuttleWebRTCAsCaller(
-            data.call_id
-        );
-
-        return;
-    }
-
 
     // ========================================
     // Call Rejected
@@ -381,9 +356,13 @@ async function handleShuttleWebRTCAnswer(
     }
 
 
+    const callState =
+        ShuttleCall.getState();
+
+
     if (
         callId !==
-        activeCallId
+        callState.activeCallId
     ) {
 
         console.warn(
@@ -395,65 +374,79 @@ async function handleShuttleWebRTCAnswer(
     }
 
 
-    if (
-        !shuttlePeerConnection
-    ) {
-
-        console.warn(
-            "[WebRTC] Monitor PeerConnection 不存在"
-        );
-
-        return;
-    }
-
-
-    await shuttlePeerConnection.setRemoteDescription(
-        new RTCSessionDescription(
-            answer
-        )
+    await ShuttleWebRTC.handleAnswer(
+        answer
     );
 
+}
+
+// ========================================
+// WebRTC - Remote Stream
+// ========================================
+
+function handleShuttleRemoteStream(
+    remoteStream
+) {
 
     console.log(
-        "[WebRTC] Monitor Remote Description 已設定"
+        "[WebRTC] Monitor 收到 Remote Stream"
     );
 
-    if (
-        pendingShuttleIceCandidates.length > 0
-    ) {
 
-        console.log(
-            "[WebRTC] Monitor 開始處理暫存 ICE:",
-            pendingShuttleIceCandidates.length
+    let audioElement =
+        document.getElementById(
+            "shuttle-remote-audio"
         );
 
-        for (
-            const candidate of pendingShuttleIceCandidates
-        ) {
 
-            try {
+    if (!audioElement) {
 
-                await shuttlePeerConnection.addIceCandidate(
-                    new RTCIceCandidate(
-                        candidate
-                    )
-                );
+        audioElement =
+            document.createElement(
+                "audio"
+            );
 
-                console.log(
-                    "[WebRTC] Monitor 暫存 ICE Candidate 已加入"
-                );
+        audioElement.id =
+            "shuttle-remote-audio";
 
-            } catch (error) {
+        audioElement.autoplay =
+            true;
 
-                console.error(
-                    "[WebRTC] Monitor 加入暫存 ICE Candidate 失敗:",
-                    error
-                );
-            }
-        }
+        audioElement.playsInline =
+            true;
 
-        pendingShuttleIceCandidates = [];
+        document.body.appendChild(
+            audioElement
+        );
+
+        console.log(
+            "[WebRTC] Monitor Remote Audio Element 已建立"
+        );
     }
+
+
+    audioElement.srcObject =
+        remoteStream;
+
+
+    audioElement
+        .play()
+        .then(() => {
+
+            console.log(
+                "[WebRTC] Monitor Remote Audio 播放成功"
+            );
+
+        })
+        .catch(error => {
+
+            console.warn(
+                "[WebRTC] Monitor Remote Audio 播放失敗:",
+                error
+            );
+
+        });
+
 }
 
 // ========================================
@@ -465,226 +458,14 @@ async function startShuttleWebRTCAsCaller(
 ) {
 
     console.log(
-        "[WebRTC] 開始建立 Caller PeerConnection:",
+        "[WebRTC] Monitor 使用 ShuttleWebRTC 建立 Caller:",
         callId
     );
 
 
-    // ========================================
-    // 建立 PeerConnection
-    // ========================================
-
-    shuttlePeerConnection =
-        new RTCPeerConnection();
-
-    shuttlePeerConnection.onconnectionstatechange = () => {
-
-        console.log(
-            "[WebRTC] Monitor Connection State:",
-            shuttlePeerConnection.connectionState
-        );
-
-    };
-
-    shuttlePeerConnection.oniceconnectionstatechange = () => {
-
-        console.log(
-            "[WebRTC] Monitor ICE Connection State:",
-            shuttlePeerConnection.iceConnectionState
-        );
-
-    };
-
-    shuttlePeerConnection.onicecandidate =
-        event => {
-
-            if (!event.candidate) {
-                return;
-            }
-
-            console.log(
-                "[WebRTC] Monitor ICE Candidate:",
-                event.candidate
-            );
-
-            if (!ShuttleMonitorWebSocket.isConnected()) {
-
-                console.warn(
-                    "[WebRTC] WebSocket 尚未連線，無法傳送 ICE"
-                );
-
-                return;
-            }
-
-            ShuttleMonitorWebSocket.send({
-
-                type:
-                    "call:webrtc-ice",
-
-                call_id:
-                    callId,
-
-                candidate:
-                    event.candidate
-
-            });
-
-        };
-
-    console.log(
-        "[WebRTC] RTCPeerConnection 建立完成"
-    );
-
-    shuttlePeerConnection.ontrack = event => {
-
-        console.log(
-            "[WebRTC] Monitor 收到 Remote Audio Track:",
-            event.track
-        );
-
-        if (!event.streams || !event.streams[0]) {
-
-            console.warn(
-                "[WebRTC] Monitor 找不到 Remote MediaStream"
-            );
-
-            return;
-        }
-
-        shuttleRemoteStream =
-            event.streams[0];
-
-        console.log(
-            "[WebRTC] Monitor Remote MediaStream 已取得:",
-            shuttleRemoteStream
-        );
-
-        let audioElement =
-            document.getElementById(
-                "shuttle-remote-audio"
-            );
-
-        if (!audioElement) {
-
-            audioElement =
-                document.createElement(
-                    "audio"
-                );
-
-            audioElement.id =
-                "shuttle-remote-audio";
-
-            audioElement.autoplay = true;
-
-            audioElement.playsInline = true;
-
-            document.body.appendChild(
-                audioElement
-            );
-
-        }
-
-        audioElement.srcObject =
-            shuttleRemoteStream;
-
-        console.log(
-            "[WebRTC] Monitor Remote Audio 已連接至 Audio Element"
-        );
-
-        audioElement
-            .play()
-            .then(() => {
-
-                console.log(
-                    "[WebRTC] Monitor Remote Audio 開始播放"
-                );
-
-            })
-            .catch(error => {
-
-                console.error(
-                    "[WebRTC] Monitor Remote Audio 播放失敗:",
-                    error
-                );
-
-            });
-
-    };
-
-    // ========================================
-    // 取得麥克風
-    // ========================================
-
-    try {
-
-        shuttleLocalStream =
-            await navigator.mediaDevices.getUserMedia({
-                audio: true
-            });
-
-    } catch (error) {
-
-        console.error(
-            "[WebRTC] 無法取得麥克風:",
-            error
-        );
-
-        return;
-    }
-
-
-    console.log(
-        "[WebRTC] 麥克風取得成功"
-    );
-
-
-    // ========================================
-    // 加入本地音訊 Track
-    // ========================================
-
-    shuttleLocalStream
-        .getTracks()
-        .forEach(
-            track => {
-
-                shuttlePeerConnection.addTrack(
-                    track,
-                    shuttleLocalStream
-                );
-
-            }
-        );
-
-
-    console.log(
-        "[WebRTC] Local audio track 已加入"
-    );
-
-
-    // ========================================
-    // 建立 Offer
-    // ========================================
-
-    const offer =
-        await shuttlePeerConnection.createOffer();
-
-
-    await shuttlePeerConnection.setLocalDescription(
-        offer
-    );
-
-
-    console.log(
-        "[WebRTC] Offer 建立完成:",
-        offer
-    );
-
-
-    // ========================================
-    // 傳送 Offer
-    // ========================================
-
-    if (!ShuttleMonitorWebSocket.isConnected()) {
+    if (
+        !ShuttleMonitorWebSocket.isConnected()
+    ) {
 
         console.warn(
             "[WebRTC] WebSocket 尚未連線"
@@ -694,26 +475,18 @@ async function startShuttleWebRTCAsCaller(
     }
 
 
-    ShuttleMonitorWebSocket.send(
-        JSON.stringify({
+    await ShuttleWebRTC.startAsCaller({
 
-            type:
-                "call:webrtc-offer",
+        webSocket:
+            ShuttleMonitorWebSocket.getSocket(),
 
-            call_id:
-                callId,
+        callId,
 
-            offer:
-                shuttlePeerConnection.localDescription
+        onRemoteStream:
+            handleShuttleRemoteStream
 
-        })
-    );
+    });
 
-
-    console.log(
-        "[WebRTC] Offer 已送出:",
-        callId
-    );
 }
 
 // ========================================
@@ -1110,6 +883,8 @@ function updateCallWindow() {
 
     createCallWindow();
 
+    const callState =
+        ShuttleCall.getState();
 
     const callWindow =
         document.getElementById(
@@ -1159,7 +934,7 @@ function updateCallWindow() {
 
 
     const target =
-        activeCallTarget || {};
+        callState.activeCallTarget || {};
 
 
     if (nameElement) {
@@ -1188,7 +963,7 @@ function updateCallWindow() {
 
 
     if (
-        activeCallState ===
+        callState.activeCallState ===
         "CALLING"
     ) {
 
@@ -1211,7 +986,7 @@ function updateCallWindow() {
 
 
     if (
-        activeCallState ===
+        callState.activeCallState ===
         "CONNECTED"
     ) {
 
@@ -1233,76 +1008,12 @@ function updateCallWindow() {
     );
 }
 
-function startCallTimer() {
-
-    stopCallTimer();
-
-
-    callTimer =
-        setInterval(
-            () => {
-
-                if (!callStartedAt) {
-                    return;
-                }
-
-
-                const elapsed =
-                    Math.floor(
-                        (
-                            Date.now() -
-                            callStartedAt
-                        ) / 1000
-                    );
-
-
-                const minutes =
-                    Math.floor(
-                        elapsed / 60
-                    );
-
-
-                const seconds =
-                    elapsed % 60;
-
-
-                const timerElement =
-                    document.getElementById(
-                        "shuttle-call-timer"
-                    );
-
-
-                if (timerElement) {
-
-                    timerElement.textContent =
-                        `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-
-                }
-
-            },
-            1000
-        );
-
-}
-
-
-function stopCallTimer() {
-
-    if (callTimer) {
-
-        clearInterval(
-            callTimer
-        );
-
-        callTimer = null;
-
-    }
-
-}
-
 function hangupActiveCall() {
 
-    if (!activeCallId) {
+    const callState =
+        ShuttleCall.getState();
+
+    if (!callState.activeCallId) {
 
         return;
     }
@@ -1320,7 +1031,7 @@ function hangupActiveCall() {
 
     console.log(
         "[Shuttle Communication] 掛斷:",
-        activeCallId
+        callState.activeCallId
     );
 
 
@@ -1330,7 +1041,7 @@ function hangupActiveCall() {
             "call:hangup",
 
         call_id:
-            activeCallId
+            callState.activeCallId
 
     });
 
@@ -1340,123 +1051,9 @@ function hangupActiveCall() {
 
 function closeCallWindow() {
 
-    // ========================================
-    // 停止通話計時器
-    // ========================================
+    ShuttleCall.clearCall();
 
-    stopCallTimer();
-
-
-    // ========================================
-    // 停止 Local Audio Tracks
-    // ========================================
-
-    if (shuttleLocalStream) {
-
-        shuttleLocalStream
-            .getTracks()
-            .forEach(track => {
-
-                track.stop();
-
-                console.log(
-                    "[WebRTC] Monitor Local Audio Track 已停止"
-                );
-
-            });
-
-        shuttleLocalStream = null;
-    }
-
-
-    // ========================================
-    // 關閉 PeerConnection
-    // ========================================
-
-    if (shuttlePeerConnection) {
-
-        shuttlePeerConnection.close();
-
-        shuttlePeerConnection = null;
-
-        console.log(
-            "[WebRTC] Monitor PeerConnection 已關閉"
-        );
-    }
-
-
-    // ========================================
-    // 清除 Remote Stream
-    // ========================================
-
-    if (shuttleRemoteStream) {
-
-        shuttleRemoteStream
-            .getTracks()
-            .forEach(track => {
-
-                track.stop();
-
-            });
-
-        shuttleRemoteStream = null;
-
-        console.log(
-            "[WebRTC] Monitor Remote MediaStream 已清除"
-        );
-    }
-
-
-    // ========================================
-    // 清除 Remote Audio Element
-    // ========================================
-
-    const audioElement =
-        document.getElementById(
-            "shuttle-remote-audio"
-        );
-
-    if (audioElement) {
-
-        audioElement.pause();
-
-        audioElement.srcObject = null;
-
-        audioElement.remove();
-
-        console.log(
-            "[WebRTC] Monitor Remote Audio Element 已移除"
-        );
-    }
-
-
-    // ========================================
-    // 清除 Pending ICE Candidates
-    // ========================================
-
-    pendingShuttleIceCandidates = [];
-
-
-    // ========================================
-    // 清除 Call State
-    // ========================================
-
-    activeCallId =
-        null;
-
-    activeCallTarget =
-        null;
-
-    activeCallState =
-        null;
-
-    callStartedAt =
-        null;
-
-
-    // ========================================
-    // 隱藏通話視窗
-    // ========================================
+    ShuttleWebRTC.cleanup();
 
     const callWindow =
         document.getElementById(
@@ -1464,12 +1061,10 @@ function closeCallWindow() {
         );
 
     if (callWindow) {
-
         callWindow.classList.add(
             "hidden"
         );
     }
-
 }
 
 // ========================================
@@ -1531,18 +1126,11 @@ function bindCommunicationCallButtons() {
                         return;
                     }
 
-
-                    activeCallId =
-                        null;
-
-                    activeCallTarget =
-                        targetDriver;
-
-                    activeCallState =
-                        "CALLING";
-
-                    callStartedAt =
-                        null;
+                    ShuttleCall.setCall({
+                        callId: null,
+                        target: targetDriver,
+                        state: "CALLING"
+                    });
 
                     updateCallWindow();
 
