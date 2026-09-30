@@ -56,30 +56,21 @@
              Bottom UI
              ======================================== -->
 
-        <section
-            id="bottom-ui"
-            class="bottom-ui"
-        >
+        <section id="bottom-ui" class="bottom-ui">
 
 
             <!-- ========================================
                  Bottom Sheet
                  ======================================== -->
 
-            <div
-                id="bottom-sheet"
-                class="bottom-sheet"
-            >
+            <div id="bottom-sheet" class="bottom-sheet">
 
                 <!-- Drag / Handle Indicator -->
                 <div class="bottom-sheet-handle"></div>
 
 
                 <!-- Sheet Content -->
-                <div
-                    id="bottom-sheet-content"
-                    class="bottom-sheet-content"
-                >
+                <div id="bottom-sheet-content" class="bottom-sheet-content">
 
                     <!--
                         內容由 shuttle-monitor.js
@@ -95,18 +86,11 @@
                  Bottom Navigation
                  ======================================== -->
 
-            <nav
-                id="bottom-navigation"
-                class="bottom-navigation"
-            >
+            <nav id="bottom-navigation" class="bottom-navigation">
 
 
                 <!-- 車輛 -->
-                <button
-                    type="button"
-                    class="bottom-nav-item"
-                    data-panel="vehicles"
-                >
+                <button type="button" class="bottom-nav-item" data-panel="vehicles">
 
                     <span class="bottom-nav-icon">
                         ◉
@@ -120,11 +104,7 @@
 
 
                 <!-- 監控 -->
-                <button
-                    type="button"
-                    class="bottom-nav-item"
-                    data-panel="monitoring"
-                >
+                <button type="button" class="bottom-nav-item" data-panel="monitoring">
 
                     <span class="bottom-nav-icon">
                         ◉
@@ -138,11 +118,7 @@
 
 
                 <!-- 通訊 -->
-                <button
-                    type="button"
-                    class="bottom-nav-item"
-                    data-panel="communication"
-                >
+                <button type="button" class="bottom-nav-item" data-panel="communication">
 
                     <span class="bottom-nav-icon">
                         ◉
@@ -156,11 +132,7 @@
 
 
                 <!-- 其他 -->
-                <button
-                    type="button"
-                    class="bottom-nav-item"
-                    data-panel="other"
-                >
+                <button type="button" class="bottom-nav-item" data-panel="other">
 
                     <span class="bottom-nav-icon">
                         ◉
@@ -208,8 +180,9 @@
     <script
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCqnZRFp5mWLKUUmh-v0SjSRBi9s-lsAQk&libraries=geometry,marker"
         defer>
-    </script>
+        </script>
 
+    <script src="./modules/shuttle-monitor-map.js"></script>
 
     <!-- ========================================
          A 路線監控

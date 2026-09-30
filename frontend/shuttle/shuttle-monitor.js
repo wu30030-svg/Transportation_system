@@ -14,19 +14,9 @@ const SHUTTLE_REFRESH_INTERVAL = 5000;
 // State
 // ========================================
 
-let shuttleMap = null;
-
-const shuttleMarkers = new Map();
-
 let shuttleRefreshTimer = null;
 
 let shuttleLocations = [];
-
-// ========================================
-// Map Display Filter
-// ========================================
-
-let shuttleMapDisplayMode = "all";
 
 // ========================================
 // WebSocket State
@@ -60,59 +50,6 @@ let shuttleRemoteStream = null;
 
 // WebRTC ICE Candidate 暫存佇列
 let pendingShuttleIceCandidates = [];
-
-// ========================================
-// Map Initialization
-// ========================================
-
-async function initShuttleMap() {
-
-    if (shuttleMap) {
-        return;
-    }
-
-    if (!window.google || !google.maps) {
-
-        console.error(
-            "[Shuttle Monitor] Google Maps 尚未載入"
-        );
-
-        return;
-    }
-
-    await google.maps.importLibrary("marker");
-
-    const targetLocation = {
-        lat: 24.239268,
-        lng: 120.623498
-    };
-
-    shuttleMap = new google.maps.Map(
-        document.getElementById("shuttleMap"),
-        {
-            center: targetLocation,
-            zoom: 14,
-            mapId: "4226f603895ec596617ae2e5",
-            mapTypeControl: false,
-            streetViewControl: false,
-            fullscreenControl: true,
-            gestureHandling: "greedy"
-        }
-    );
-
-    console.log(
-        "[Shuttle Monitor] Google Maps 初始化完成"
-    );
-
-    await refreshShuttleLocations();
-
-    shuttleRefreshTimer =
-        setInterval(
-            refreshShuttleLocations,
-            SHUTTLE_REFRESH_INTERVAL
-        );
-}
-
 
 // ========================================
 // WebSocket Connection
@@ -974,7 +911,7 @@ async function refreshShuttleLocations() {
             `[Shuttle Monitor] 收到 ${locations.length} 筆定位資料`
         );
 
-        renderARouteLocations(
+        ShuttleMonitorMap.renderLocations(
             locations
         );
 
@@ -989,203 +926,6 @@ async function refreshShuttleLocations() {
             error
         );
     }
-}
-
-
-// ========================================
-// Render A Route
-// ========================================
-
-function renderARouteLocations(locations) {
-
-    const currentIds =
-        new Set();
-
-
-    locations.forEach(location => {
-
-        const personnelNumber =
-            location.personnel_number;
-
-        if (
-            typeof personnelNumber !==
-            "string"
-        ) {
-
-            return;
-        }
-
-
-        if (
-            typeof location.latitude !==
-            "number" ||
-            typeof location.longitude !==
-            "number"
-        ) {
-
-            return;
-        }
-
-
-        // ========================================
-        // Map Display Filter
-        // ========================================
-
-        if (
-            shuttleMapDisplayMode ===
-            "online" &&
-            location.gps_status !==
-            "ONLINE"
-        ) {
-
-            return;
-        }
-
-
-        currentIds.add(
-            personnelNumber
-        );
-
-
-        updateShuttleMarker(
-            personnelNumber,
-            location.latitude,
-            location.longitude
-        );
-
-    });
-
-
-    // ========================================
-    // Remove Hidden / Missing Markers
-    // ========================================
-
-    shuttleMarkers.forEach(
-        (
-            marker,
-            personnelNumber
-        ) => {
-
-            if (
-                !currentIds.has(
-                    personnelNumber
-                )
-            ) {
-
-                marker.map = null;
-
-                shuttleMarkers.delete(
-                    personnelNumber
-                );
-            }
-
-        }
-    );
-}
-
-
-// ========================================
-// Create / Update Marker
-// ========================================
-
-function updateShuttleMarker(
-    personnelNumber,
-    latitude,
-    longitude
-) {
-
-    const position = {
-        lat: latitude,
-        lng: longitude
-    };
-
-    let marker =
-        shuttleMarkers.get(
-            personnelNumber
-        );
-
-    if (!marker) {
-
-        marker =
-            createShuttleMarker(
-                personnelNumber,
-                position
-            );
-
-        shuttleMarkers.set(
-            personnelNumber,
-            marker
-        );
-
-        return;
-    }
-
-    marker.position =
-        position;
-}
-
-
-// ========================================
-// Create Shuttle Marker
-// ========================================
-
-function createShuttleMarker(
-    personnelNumber,
-    position
-) {
-
-    const markerElement =
-        document.createElement(
-            "div"
-        );
-
-    markerElement.className =
-        "shuttle-marker";
-
-
-    const dot =
-        document.createElement(
-            "span"
-        );
-
-    dot.className =
-        "shuttle-dot";
-
-
-    const label =
-        document.createElement(
-            "span"
-        );
-
-    label.className =
-        "shuttle-label";
-
-
-    const vehicleNumber =
-        personnelNumber;
-
-    label.textContent =
-        vehicleNumber;
-
-
-    markerElement.appendChild(
-        dot
-    );
-
-    markerElement.appendChild(
-        label
-    );
-
-
-    const marker =
-        new google.maps.marker.AdvancedMarkerElement({
-            map: shuttleMap,
-            position,
-            content: markerElement,
-            title: vehicleNumber
-        });
-
-    return marker;
 }
 
 // ========================================
@@ -2314,14 +2054,15 @@ function bindMapDisplaySettings() {
                 }
 
 
-                shuttleMapDisplayMode =
-                    mode;
+                ShuttleMonitorMap.setDisplayMode(
+                    mode
+                );
 
 
                 updateMapDisplaySettings();
 
 
-                renderARouteLocations(
+                ShuttleMonitorMap.renderLocations(
                     shuttleLocations
                 );
 
@@ -2355,7 +2096,7 @@ function updateMapDisplaySettings() {
 
         const isActive =
             mode ===
-            shuttleMapDisplayMode;
+            ShuttleMonitorMap.getDisplayMode();
 
 
         option.classList.toggle(
@@ -2569,7 +2310,7 @@ if (bottomSheet) {
 // Start
 // ========================================
 
-function waitForGoogleMaps() {
+async function waitForGoogleMaps() {
 
     if (
         window.google &&
@@ -2577,7 +2318,15 @@ function waitForGoogleMaps() {
         google.maps.importLibrary
     ) {
 
-        initShuttleMap();
+        await ShuttleMonitorMap.init();
+
+        await refreshShuttleLocations();
+
+        shuttleRefreshTimer =
+            setInterval(
+                refreshShuttleLocations,
+                SHUTTLE_REFRESH_INTERVAL
+            );
 
         return;
     }
