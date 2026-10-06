@@ -75,12 +75,18 @@ router.get(
 
         try {
 
-            const data =
-                await shuttleRouteGeometryService
-                    .buildStopToStopGeometry({
+            const geometry =
+                shuttleRouteGeometryService
+                    .getStoredRouteGeometry({
                         routeCode,
                         direction
                     });
+
+            const data = {
+                routeCode,
+                direction,
+                geometry
+            };
 
             return res.json({
                 success: true,

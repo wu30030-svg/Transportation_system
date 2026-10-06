@@ -30,6 +30,7 @@
                 <span class="status-dot"></span>
                 <span>系統正常</span>
             </div>
+
             <button id="logout-btn" type="button">
                 登出
             </button>
@@ -63,18 +64,14 @@
 
 
         <!-- GPS Status -->
-        <section class="gps-card">
+        <section id="shuttle-gps-monitor-status" class="shuttle-gps-monitor-status starting">
 
-            <div class="gps-status-icon">
-                ●
+            <div class="gps-monitor-title">
+                🟡 正在取得 GPS
             </div>
 
-            <div class="gps-status-title">
-                定位正常
-            </div>
-
-            <div class="gps-status-description">
-                GPS 定位資料正在傳送
+            <div class="gps-monitor-detail">
+                正在等待手機定位
             </div>
 
         </section>
@@ -85,17 +82,26 @@
 
             <div class="info-row">
                 <span>GPS 狀態</span>
-                <strong>已啟用</strong>
+
+                <strong id="gpsState">
+                    啟動中
+                </strong>
             </div>
 
             <div class="info-row">
                 <span>最後更新</span>
-                <strong id="lastUpdate">--:--:--</strong>
+
+                <strong id="lastUpdate">
+                    --:--:--
+                </strong>
             </div>
 
             <div class="info-row">
                 <span>定位精度</span>
-                <strong id="accuracy">--</strong>
+
+                <strong id="accuracy">
+                    --
+                </strong>
             </div>
 
         </section>
@@ -105,22 +111,28 @@
         <section class="sending-card">
 
             <div class="sending-indicator">
-                <span class="sending-dot"></span>
+
+                <span id="sendingDot" class="sending-dot">
+                </span>
 
                 <div>
-                    <div class="sending-title">
-                        正在傳送定位
+
+                    <div id="sendingTitle" class="sending-title">
+                        正在確認定位
                     </div>
 
-                    <div class="sending-description">
+                    <div id="sendingDescription" class="sending-description">
                         請保持手機定位與網路開啟
                     </div>
+
                 </div>
+
             </div>
 
         </section>
 
     </main>
+
 
     <script src="../config.js"></script>
     <script src="../auth/auth.js"></script>

@@ -5,18 +5,447 @@ console.log("[Shuttle Driver] Driver UI 啟動");
 // DOM
 // ========================================
 
+const gpsStatusElement =
+    document.getElementById(
+        "shuttle-gps-monitor-status"
+    );
+
+const gpsStateElement =
+    document.getElementById(
+        "gpsState"
+    );
+
 const lastUpdateElement =
-    document.getElementById("lastUpdate");
+    document.getElementById(
+        "lastUpdate"
+    );
 
 const accuracyElement =
-    document.getElementById("accuracy");
+    document.getElementById(
+        "accuracy"
+    );
+
+const sendingDotElement =
+    document.getElementById(
+        "sendingDot"
+    );
+
+const sendingTitleElement =
+    document.getElementById(
+        "sendingTitle"
+    );
+
+const sendingDescriptionElement =
+    document.getElementById(
+        "sendingDescription"
+    );
+
+
+// ========================================================
+// GPS / Monitor Status UI
+// ========================================================
+
+function updateDriverGPSStatus(data) {
+
+    const status =
+        data.status;
+
+
+    // ====================================================
+    // STARTING
+    // ====================================================
+
+    if (
+        status ===
+        "STARTING"
+    ) {
+
+        setGPSStatusUI(
+            "starting",
+            "🟡 正在取得 GPS",
+            "正在等待手機定位"
+        );
+
+        setGPSState(
+            "啟動中"
+        );
+
+        setSendingStatus(
+            "確認中",
+            "正在等待 GPS 定位資料"
+        );
+
+        return;
+    }
+
+
+    // ====================================================
+    // GPS_UNAVAILABLE
+    // ====================================================
+
+    if (
+        status ===
+        "GPS_UNAVAILABLE"
+    ) {
+
+        setGPSStatusUI(
+            "offline",
+            "🔴 GPS 未啟用",
+            "請開啟手機定位權限"
+        );
+
+        setGPSState(
+            "未啟用"
+        );
+
+        setSendingStatus(
+            "無法傳送定位",
+            "請開啟手機定位與網路"
+        );
+
+        return;
+    }
+
+
+    // ====================================================
+    // GPS_ERROR
+    // ====================================================
+
+    if (
+        status ===
+        "GPS_ERROR"
+    ) {
+
+        setGPSStatusUI(
+            "offline",
+            "🔴 GPS 定位異常",
+            "請確認手機定位功能已開啟"
+        );
+
+        setGPSState(
+            "定位異常"
+        );
+
+        setSendingStatus(
+            "定位異常",
+            "目前無法取得新的 GPS 資料"
+        );
+
+        return;
+    }
+
+
+    // ====================================================
+    // GPS_RECEIVED / WAITING_UPLOAD
+    // ====================================================
+
+    if (
+        status === "GPS_RECEIVED" ||
+        status === "WAITING_UPLOAD"
+    ) {
+
+        setGPSStatusUI(
+            "warning",
+            "🟡 GPS 已取得",
+            "正在傳送定位至監控中心"
+        );
+
+        setGPSState(
+            "已取得"
+        );
+
+        setSendingStatus(
+            "正在傳送定位",
+            "正在等待監控中心確認"
+        );
+
+        return;
+    }
+
+
+    // ====================================================
+    // UPLOAD_ERROR
+    // ====================================================
+
+    if (
+        status ===
+        "UPLOAD_ERROR"
+    ) {
+
+        const lastSuccessText =
+            data.lastUploadSuccessAt
+                ? new Date(
+                    data.lastUploadSuccessAt
+                ).toLocaleTimeString(
+                    "zh-TW",
+                    {
+                        hour12: false
+                    }
+                )
+                : "尚無成功紀錄";
+
+
+        setGPSStatusUI(
+            "warning",
+            "🟡 定位傳送異常",
+            "監控中心尚未收到最新定位"
+        );
+
+        setGPSState(
+            "傳送異常"
+        );
+
+        setSendingStatus(
+            "定位傳送異常",
+            `最後成功：${lastSuccessText}`
+        );
+
+        return;
+    }
+
+
+    // ====================================================
+    // DELAYED
+    // ====================================================
+
+    if (
+        status ===
+        "DELAYED"
+    ) {
+
+        const seconds =
+            data.secondsSinceUpload ?? 0;
+
+
+        setGPSStatusUI(
+            "warning",
+            "🟡 監控定位更新延遲",
+            `已 ${seconds} 秒未成功送出新定位`
+        );
+
+        setGPSState(
+            "更新延遲"
+        );
+
+        setSendingStatus(
+            "定位更新延遲",
+            "請保持接駁車中心開啟"
+        );
+
+        return;
+    }
+
+
+    // ====================================================
+    // OFFLINE
+    // ====================================================
+
+    if (
+        status ===
+        "OFFLINE"
+    ) {
+
+        const seconds =
+            data.secondsSinceUpload ?? 0;
+
+
+        const lastSuccessText =
+            data.lastUploadSuccessAt
+                ? new Date(
+                    data.lastUploadSuccessAt
+                ).toLocaleTimeString(
+                    "zh-TW",
+                    {
+                        hour12: false
+                    }
+                )
+                : "尚無成功紀錄";
+
+
+        setGPSStatusUI(
+            "offline",
+            "🔴 監控定位已中斷",
+            `已 ${seconds} 秒未收到新的定位`
+        );
+
+        setGPSState(
+            "已中斷"
+        );
+
+        setSendingStatus(
+            "定位傳送已中斷",
+            `最後成功送出：${lastSuccessText}`
+        );
+
+        return;
+    }
+
+
+    // ====================================================
+    // ONLINE
+    // ====================================================
+
+    if (
+        status ===
+        "ONLINE"
+    ) {
+
+        const lastSuccessText =
+            data.lastUploadSuccessAt
+                ? new Date(
+                    data.lastUploadSuccessAt
+                ).toLocaleTimeString(
+                    "zh-TW",
+                    {
+                        hour12: false
+                    }
+                )
+                : "--";
+
+
+        setGPSStatusUI(
+            "online",
+            "🟢 監控中心已收到定位",
+            "定位資料傳送正常"
+        );
+
+        setGPSState(
+            "已連線"
+        );
+
+        setSendingStatus(
+            "定位傳送正常",
+            `最後成功：${lastSuccessText}`
+        );
+
+        return;
+    }
+
+
+    // ====================================================
+    // RESTARTING
+    // ====================================================
+
+    if (
+        status ===
+        "RESTARTING"
+    ) {
+
+        setGPSStatusUI(
+            "starting",
+            "🟡 正在重新取得 GPS",
+            "頁面重新啟動定位服務"
+        );
+
+        setGPSState(
+            "重新啟動"
+        );
+
+        setSendingStatus(
+            "重新取得定位",
+            "正在重新連線 GPS"
+        );
+
+        return;
+    }
+}
+
+
+// ========================================================
+// GPS Status Card
+// ========================================================
+
+function setGPSStatusUI(
+    className,
+    title,
+    description
+) {
+
+    if (!gpsStatusElement) {
+        return;
+    }
+
+
+    gpsStatusElement.className =
+        `shuttle-gps-monitor-status ${className}`;
+
+
+    gpsStatusElement.innerHTML = `
+
+        <div class="gps-monitor-title">
+            ${title}
+        </div>
+
+        <div class="gps-monitor-detail">
+            ${description}
+        </div>
+
+    `;
+}
+
+
+// ========================================================
+// GPS State
+// ========================================================
+
+function setGPSState(
+    state
+) {
+
+    if (!gpsStateElement) {
+        return;
+    }
+
+    gpsStateElement.textContent =
+        state;
+}
+
+
+// ========================================================
+// Sending Status
+// ========================================================
+
+function setSendingStatus(
+    title,
+    description
+) {
+
+    if (sendingTitleElement) {
+
+        sendingTitleElement.textContent =
+            title;
+    }
+
+
+    if (sendingDescriptionElement) {
+
+        sendingDescriptionElement.textContent =
+            description;
+    }
+
+
+    if (sendingDotElement) {
+
+        sendingDotElement.className =
+            "sending-dot";
+    }
+}
+
+
+// ========================================================
+// GPS Init
+// ========================================================
 
 ShuttleGPS.init({
+
     lastUpdateElement:
         lastUpdateElement,
 
     accuracyElement:
-        accuracyElement
+        accuracyElement,
+
+    statusHandler:
+        updateDriverGPSStatus
 });
 
 // ========================================

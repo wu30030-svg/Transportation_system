@@ -55,6 +55,74 @@ async function login(req, res) {
 
 
 // ========================================
+// Current User
+// ========================================
+
+async function me(req, res) {
+
+    try {
+
+        const userId =
+            req.user?.user_id;
+
+
+        if (!userId) {
+
+            return res.status(401).json({
+
+                success: false,
+
+                message:
+                    "Invalid session"
+
+            });
+
+        }
+
+
+        const user =
+            await authService.getCurrentUser(
+                userId
+            );
+
+
+        return res.status(200).json({
+
+            success: true,
+
+            data: {
+
+                user
+
+            }
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Current User Error:",
+            error
+        );
+
+
+        return res.status(
+            error.statusCode || 500
+        ).json({
+
+            success: false,
+
+            message:
+                error.message ||
+                "Internal Server Error"
+
+        });
+
+    }
+}
+
+
+// ========================================
 // Logout
 // ========================================
 
@@ -121,6 +189,8 @@ async function logout(req, res) {
 module.exports = {
 
     login,
+
+    me,
 
     logout
 

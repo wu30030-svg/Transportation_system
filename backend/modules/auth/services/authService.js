@@ -219,6 +219,80 @@ async function login(username, password) {
 }
 
 // ========================================
+// Get Current User
+// ========================================
+
+async function getCurrentUser(userId) {
+
+    if (!userId) {
+
+        const error =
+            new Error("Invalid user");
+
+        error.statusCode = 401;
+
+        throw error;
+    }
+
+
+    const user =
+        await authRepository.findUserById(
+            userId
+        );
+
+
+    if (!user) {
+
+        const error =
+            new Error("User not found");
+
+        error.statusCode = 401;
+
+        throw error;
+    }
+
+
+    if (!user.is_active) {
+
+        const error =
+            new Error(
+                "User account is inactive"
+            );
+
+        error.statusCode = 403;
+
+        throw error;
+    }
+
+
+    return {
+
+        id: user.id,
+
+        user_id: user.user_id,
+
+        username: user.username,
+
+        name: user.name,
+
+        role_id: user.role_id,
+
+        access_context:
+            user.access_context || null,
+
+        personnel_id:
+            user.personnel_id || null,
+
+        personnel_number:
+            user.personnel_number || null,
+
+        personnel_name:
+            user.personnel_name || null
+
+    };
+}
+
+// ========================================
 // Logout
 // ========================================
 
@@ -300,5 +374,6 @@ async function forceLogout(username) {
 module.exports = {
     login,
     logout,
-    forceLogout
+    forceLogout,
+    getCurrentUser
 };

@@ -1,7 +1,12 @@
 ﻿const express = require("express");
 
-const authController = require("../controllers/authController");
-const { authenticateToken } = require("../../../middleware/authMiddleware");
+const authController =
+    require("../controllers/authController");
+
+const {
+    authenticateToken
+} =
+    require("../../../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -13,6 +18,17 @@ const router = express.Router();
 router.post(
     "/login",
     authController.login
+);
+
+
+// ========================================
+// Current User
+// ========================================
+
+router.get(
+    "/me",
+    authenticateToken,
+    authController.me
 );
 
 
