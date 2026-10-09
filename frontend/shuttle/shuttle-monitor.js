@@ -398,57 +398,85 @@ function handleShuttleLocationsUpdated(locations) {
 // Vehicle / GPS Status
 // ========================================
 
+
 function renderVehiclePanel() {
     const vehicleList = document.querySelector(".shuttle-vehicle-list");
-    if (!vehicleList) {
-        return;
-    }
-    const drivers = shuttleLocations.filter(driver => Number(driver.role_id) === 4);
+    if (!vehicleList) return;
+
+    const drivers = shuttleLocations.filter(
+        driver => Number(driver.role_id) === 4
+    );
+
     if (drivers.length === 0) {
         vehicleList.innerHTML = `
-            <div class="communication-empty">
-                <div class="communication-empty-title">
-                    目前沒有路線駕駛
-                </div>
-                <div class="communication-empty-text">
-                    尚未取得駕駛資料
-                </div>
-            </div>
+            <div class="communication-empty">目前沒有接駁車定位資料</div>
         `;
         return;
     }
-    vehicleList.innerHTML = drivers.map(driver => {
-        const personnelName = driver.personnel_name || driver.username || "未設定姓名";
-        const personnelNumber = driver.personnel_number || "未設定編號";
-        const gpsStatus = driver.gps_status || "NO_LOCATION";
-        let statusText = "尚未定位";
-        if (gpsStatus === "ONLINE") {
-            statusText = "ONLINE";
-        } else if (gpsStatus === "OFFLINE") {
-            statusText = "OFFLINE";
+
+    const statusMap = {
+        ONLINE: {
+            className: "online",
+            label: "在線且有定位"
+        },
+        DELAYED: {
+            className: "delayed",
+            label: "定位更新延遲"
+        },
+        WAITING_UPLOAD: {
+            className: "delayed",
+            label: "定位等待上傳"
+        },
+        GPS_RECEIVED: {
+            className: "online",
+            label: "已收到定位"
+        },
+        OFFLINE: {
+            className: "offline",
+            label: "離線"
+        },
+        NO_LOCATION: {
+            className: "no_location",
+            label: "尚無定位"
+        },
+        GPS_UNAVAILABLE: {
+            className: "no_location",
+            label: "GPS 無法使用"
+        },
+        GPS_ERROR: {
+            className: "no_location",
+            label: "GPS 異常"
         }
+    };
+
+    vehicleList.innerHTML = drivers.map(driver => {
+        const vehicleLabel =
+            driver.personnel_number ||
+            driver.username ||
+            driver.personnel_name ||
+            "未識別";
+
+        const gpsStatus = String(
+            driver.gps_status || "NO_LOCATION"
+        ).toUpperCase();
+
+        const status = statusMap[gpsStatus] || {
+            className: "no_location",
+            label: "狀態未知"
+        };
+
         return `
-                    <div class="communication-item">
-                        <div class="communication-person">
-                            <div
-                                class="communication-status-dot ${gpsStatus.toLowerCase()}"
-                            ></div>
-                            <div class="communication-person-info">
-                                <div class="communication-person-name">
-                                    ${escapeHtml(personnelName)}
-                                </div>
-                                <div class="communication-person-number">
-                                    ${escapeHtml(personnelNumber)}
-                                </div>
-                                <div class="communication-person-context">
-                                    GPS：${escapeHtml(statusText)}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-    }
-    ).join("");
+            <div class="shuttle-vehicle-card"
+                 title="${escapeHtml(vehicleLabel)}｜${escapeHtml(status.label)}">
+                <span class="shuttle-vehicle-status ${status.className}"
+                      role="img"
+                      aria-label="${escapeHtml(status.label)}"></span>
+                <span class="shuttle-vehicle-id">
+                    ${escapeHtml(vehicleLabel)}
+                </span>
+            </div>
+        `;
+    }).join("");
 }
 
 // ========================================
@@ -463,69 +491,62 @@ function getOnlineDrivers() {
 // Render Communication Panel
 // ========================================
 
+
 function renderCommunicationPanel() {
-    const communicationList = document.querySelector(".communication-list");
+    const communicationList =
+        document.querySelector(".communication-list");
 
-    /*
-     * 如果目前沒有開啟「通訊」面板，
-     * 不需要立即操作畫面。
-     *
-     * 下一次開啟面板時，
-     * openBottomPanel() 會使用最新資料。
-     */
+    if (!communicationList) return;
 
-    if (!communicationList) {
-        return;
-    }
     const drivers = getOnlineDrivers();
+
     if (drivers.length === 0) {
         communicationList.innerHTML = `
-            <div class="communication-empty">
-                <div class="communication-empty-title">
-                    目前沒有在線駕駛
-                </div>
-                <div class="communication-empty-text">
-                    等待駕駛登入接駁車勤務
-                </div>
-            </div>
+            <div class="communication-empty">目前沒有在線駕駛</div>
         `;
         return;
     }
+
     communicationList.innerHTML = drivers.map(driver => {
-        const personnelName = driver.personnel_name || driver.username || "未設定姓名";
-        const personnelNumber = driver.personnel_number || "未設定編號";
-        const accessContext = driver.access_context || "未設定勤務區域";
-        const userId = driver.user_id || "";
+        const name =
+            driver.personnel_name ||
+            driver.username ||
+            "未設定姓名";
+
+        const number =
+            driver.personnel_number ||
+            driver.username ||
+            "未設定編號";
+
+        const userId = String(driver.user_id ?? "");
+
         return `
-                    <div
-                        class="communication-item"
-                        data-user-id="${escapeHtml(userId)}"
-                    >
-                        <div class="communication-person">
-                            <div class="communication-status-dot"></div>
-                            <div class="communication-person-info">
-                                <div class="communication-person-name">
-                                    ${escapeHtml(personnelName)}
-                                </div>
-                                <div class="communication-person-number">
-                                    ${escapeHtml(personnelNumber)}
-                                </div>
-                                <div class="communication-person-context">
-                                    ${escapeHtml(accessContext)}
-                                </div>
-                            </div>
+            <div class="communication-item">
+                <div class="communication-person">
+                    <span class="communication-status-dot online"
+                          title="WebSocket 在線"></span>
+
+                    <div class="communication-person-info">
+                        <div class="communication-person-name">
+                            ${escapeHtml(name)}
                         </div>
-                        <button
-                            type="button"
-                            class="communication-call-button"
-                            data-user-id="${escapeHtml(userId)}"
-                        >
-                            呼叫
-                        </button>
+
+                        <div class="communication-person-number">
+                            ${escapeHtml(number)}
+                        </div>
                     </div>
-                `;
-    }
-    ).join("");
+                </div>
+
+                <button
+                    type="button"
+                    class="communication-call-button"
+                    data-user-id="${escapeHtml(userId)}">
+                    呼叫
+                </button>
+            </div>
+        `;
+    }).join("");
+
     bindCommunicationCallButtons();
 }
 

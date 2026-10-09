@@ -1078,3 +1078,194 @@ Google Maps UI 微調
     }
 
 }
+
+/* =========================================
+   Shuttle Monitor - Compact Card Panels
+   ========================================= */
+
+/* 車輛面板：緊湊網格 */
+.shuttle-vehicle-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,
+            minmax(100px, 1fr));
+    gap: 10px;
+    align-content: start;
+    padding: 8px 0 16px;
+}
+
+.shuttle-vehicle-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    aspect-ratio: 1 / 0.82;
+    min-width: 0;
+    padding: 10px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.045);
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease;
+}
+
+.shuttle-vehicle-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.20);
+}
+
+.shuttle-vehicle-id {
+    max-width: 100%;
+    overflow: hidden;
+    color: #e8edf4;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.35;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shuttle-vehicle-status,
+.communication-status-dot {
+    flex: 0 0 auto;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #7b8491;
+    box-shadow: 0 0 0 3px rgba(123, 132, 145, 0.12);
+}
+
+.shuttle-vehicle-status.online,
+.communication-status-dot.online {
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.13);
+}
+
+.shuttle-vehicle-status.delayed,
+.communication-status-dot.delayed {
+    background: #facc15;
+    box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.13);
+}
+
+.shuttle-vehicle-status.offline,
+.communication-status-dot.offline {
+    background: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.13);
+}
+
+.shuttle-vehicle-status.no_location,
+.communication-status-dot.no_location {
+    background: #7b8491;
+    box-shadow: 0 0 0 3px rgba(123, 132, 145, 0.12);
+}
+
+/* 通訊面板：多欄字卡 */
+.communication-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,
+            minmax(220px, 1fr));
+    gap: 10px;
+    align-content: start;
+    padding: 8px 0 16px;
+}
+
+.communication-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+    min-height: 68px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.045);
+}
+
+.communication-item:hover {
+    background: rgba(255, 255, 255, 0.075);
+}
+
+.communication-person {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.communication-person-info {
+    min-width: 0;
+}
+
+.communication-person-name,
+.communication-person-number {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.communication-person-name {
+    color: #e8edf4;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.communication-person-number {
+    margin-top: 2px;
+    color: #9aa6b5;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.communication-item .communication-call-button {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 7px 12px;
+    border-radius: 9px;
+}
+
+/* 面板內容縮小留白 */
+.bottom-sheet-content {
+    padding: 8px 14px 16px;
+}
+
+.bottom-panel-header {
+    padding-bottom: 10px;
+}
+
+/* 手機版：避免卡片過窄 */
+@media (max-width: 600px) {
+    .shuttle-vehicle-list {
+        grid-template-columns: repeat(auto-fill,
+                minmax(82px, 1fr));
+        gap: 8px;
+    }
+
+    .shuttle-vehicle-card {
+        border-radius: 12px;
+        gap: 10px;
+        padding: 8px 4px;
+    }
+
+    .shuttle-vehicle-id {
+        font-size: 11px;
+    }
+
+    .communication-list {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .communication-item {
+        min-height: 62px;
+        padding: 9px 10px;
+        border-radius: 12px;
+    }
+}
