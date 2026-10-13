@@ -1,6 +1,160 @@
 console.log("[Shuttle Driver] Driver UI 啟動");
 
 
+/**
+ * ========================================
+ * Driver Identity
+ * 依登入帳號取得駕駛、車輛顯示名稱及路線
+ * ========================================
+ */
+
+async function loadShuttleDriverIdentity() {
+    const vehicleElement = document.getElementById(
+        "driver-vehicle-name"
+    );
+
+    const personnelElement = document.getElementById(
+        "driver-personnel-name"
+    );
+
+    const routeElement = document.getElementById(
+        "driver-route-name"
+    );
+
+    try {
+        const token = getAuthToken();
+
+        if (!token) {
+            throw new Error("登入憑證不存在");
+        }
+
+        const response = await fetch(
+            `${CONFIG.API_BASE_URL}/api/auth/me`,
+            {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `取得登入資料失敗：HTTP ${response.status}`
+            );
+        }
+
+        const result = await response.json();
+
+        // 相容常見的 API 回傳結構
+        const user =
+            result.user ||
+            result.data?.user ||
+            result.data ||
+            result;
+
+        const personnelNumber =
+            user.personnel_number || "";
+
+        const personnelName =
+            user.personnel_name ||
+            user.name ||
+            user.username ||
+            "未設定駕駛姓名";
+
+        const accessContext =
+            user.access_context || "";
+
+        if (!personnelNumber) {
+            throw new Error(
+                "登入帳號沒有 personnel_number，無法與監控地圖對應"
+            );
+        }
+
+        // 與監控端 getShuttleDisplayName() 使用相同的編號規則
+        const numberMatch = personnelNumber.match(
+            /^SHUTTLE-(\d{3})$/i
+        );
+
+        let vehicleName = personnelNumber;
+
+        if (numberMatch) {
+            const number = Number(numberMatch[1]);
+
+            if (number >= 1 && number <= 10) {
+                vehicleName = `成功線 ${number}`;
+            } else if (number >= 11 && number <= 60) {
+                vehicleName = `新烏日線 ${number - 10}`;
+            } else if (number >= 61 && number <= 110) {
+                vehicleName = `水湳線 ${number - 60}`;
+            } else if (number >= 111 && number <= 125) {
+                vehicleName = `嶺東科大線 ${number - 110}`;
+            } else if (number >= 126 && number <= 135) {
+                vehicleName = `營內1號門接駁線 ${number - 125}`;
+            } else if (number >= 136 && number <= 141) {
+                vehicleName = `復康巴士 ${number - 135}`;
+            } else if (number >= 142 && number <= 152) {
+                vehicleName = `待命車輛 ${number - 141}`;
+            }
+        }
+
+        // 將後端路線代碼轉為駕駛端顯示文字
+        let routeName = "尚未設定路線";
+
+        const routeMatch = accessContext.match(
+            /營區開放_([A-E])路線/
+        );
+
+        if (routeMatch) {
+            routeName = `${routeMatch[1]} 路線`;
+        } else if (accessContext) {
+            routeName = accessContext;
+        }
+
+        if (vehicleElement) {
+            vehicleElement.textContent = vehicleName;
+        }
+
+        if (personnelElement) {
+            personnelElement.textContent = personnelName;
+        }
+
+        if (routeElement) {
+            routeElement.textContent = routeName;
+        }
+
+        console.log("[Shuttle Driver] 身分資料已載入", {
+            personnelNumber,
+            vehicleName,
+            personnelName,
+            routeName
+        });
+
+    } catch (error) {
+        console.error(
+            "[Shuttle Driver] 載入身分資料失敗：",
+            error
+        );
+
+        if (vehicleElement) {
+            vehicleElement.textContent = "無法取得車輛資料";
+        }
+
+        if (personnelElement) {
+            personnelElement.textContent = "無法取得駕駛資料";
+        }
+
+        if (routeElement) {
+            routeElement.textContent = "無法取得路線資料";
+        }
+    }
+}
+
+// 載入身分不應阻止 GPS 啟動
+loadShuttleDriverIdentity();
+
+
 // ========================================
 // DOM
 // ========================================

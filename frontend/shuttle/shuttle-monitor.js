@@ -17,27 +17,85 @@ let shuttleLocations = [];
 // Monitor Route Configuration
 // ========================================
 
-const SHUTTLE_MONITOR_ROUTES = {
 
-    "營區開放_A路線": {
+
+const SHUTTLE_MONITOR_ROUTES = {
+    ["\u71df\u5340\u958b\u653e_A\u8def\u7dda"]: {
         routeCode: "SUCCESS",
         routeName: "成功線",
-        color: "GREEN"
+        color: "#22C55E"
     },
-
-    "營區開放_B路線": {
+    ["\u71df\u5340\u958b\u653e_B\u8def\u7dda"]: {
         routeCode: "XINWURI",
         routeName: "新烏日線",
-        color: "BLUE"
+        color: "#3B82F6"
     },
-
-    "營區開放_C路線": {
+    ["\u71df\u5340\u958b\u653e_C\u8def\u7dda"]: {
         routeCode: "SHUINAN",
-        routeName: "水湳經貿線",
-        color: "YELLOW"
+        routeName: "水湳線",
+        color: "#EAB308"
+    },
+    ["\u71df\u5340\u958b\u653e_D\u8def\u7dda"]: {
+        routeCode: null,
+        routeName: "嶺東科大線",
+        color: "#7B4DFF"
+    },
+    ["\u71df\u5340\u958b\u653e_E\u8def\u7dda"]: {
+        routeCode: null,
+        routeName: "營區接駁線",
+        color: "#6B4A2B"
+    }
+};
+
+const SHUTTLE_WORKSPACE_MARKER_COLORS = {
+    ["\u71df\u5340\u958b\u653e_A\u8def\u7dda"]: "#F02DAB",
+    ["\u71df\u5340\u958b\u653e_B\u8def\u7dda"]: "#FF5A1F",
+    ["\u71df\u5340\u958b\u653e_C\u8def\u7dda"]: "#00A6C8",
+    ["\u71df\u5340\u958b\u653e_D\u8def\u7dda"]: "#7B4DFF",
+    ["\u71df\u5340\u958b\u653e_E\u8def\u7dda"]: "#6B4A2B"
+};
+
+
+window.getShuttleDisplayName = function (personnelNumber) {
+    const match = /^SHUTTLE-(\d{3})$/.exec(
+        String(personnelNumber || "")
+    );
+
+    if (!match) return personnelNumber || "未知車輛";
+
+    const n = Number(match[1]);
+
+    if (n >= 1 && n <= 10) {
+        return `成功線 ${n}`;
     }
 
+    if (n >= 11 && n <= 60) {
+        return `新烏日線 ${n - 10}`;
+    }
+
+    if (n >= 61 && n <= 110) {
+        return `水湳線 ${n - 60}`;
+    }
+
+    if (n >= 111 && n <= 125) {
+        return `嶺東科大線 ${n - 110}`;
+    }
+
+    if (n >= 126 && n <= 135) {
+        return `營內1號門接駁線 ${n - 125}`;
+    }
+
+    if (n >= 136 && n <= 141) {
+        return `復康巴士 ${n - 135}`;
+    }
+
+    if (n >= 142 && n <= 152) {
+        return `待命車輛 ${n - 141}`;
+    }
+
+    return personnelNumber;
 };
+
 
 // ========================================
 // Monitor Route State
@@ -56,7 +114,7 @@ let shuttleOnlineUsers = [];
 
 async function loadShuttleMonitorRoute() {
 
-    if (!shuttleMonitorRouteConfig) {
+    if (!shuttleMonitorRouteConfig?.routeCode) {
         console.warn("[Shuttle Monitor] 尚未取得路線設定");
         return;
     } try {
@@ -173,8 +231,23 @@ async function handleShuttleWebSocketMessage(data) {
         shuttleMonitorUser = data.user || null;
         shuttleMonitorRoute = data.user?.access_context || null;
         shuttleMonitorRouteConfig = SHUTTLE_MONITOR_ROUTES[shuttleMonitorRoute] || null;
+        // 更新 Header 中央的路線標題
+        const routeBadge = document.getElementById("route-badge");
+        if (routeBadge) {
+            routeBadge.textContent = shuttleMonitorRouteConfig
+                ? `${shuttleMonitorRouteConfig.routeName}監控`
+                : "接駁路線監控";
+        }
+        const markerColor = SHUTTLE_WORKSPACE_MARKER_COLORS[shuttleMonitorRoute];
+        if (markerColor) {
+            ShuttleMonitorMap.setMarkerColor(markerColor);
+        } else {
+            console.error("[Shuttle Monitor] 找不到工作區 GPS 顏色設定:", shuttleMonitorRoute);
+        }
         console.log("[Shuttle Monitor] 監控路線:", shuttleMonitorRoute);
         console.log("[Shuttle Monitor] 路線設定:", shuttleMonitorRouteConfig);
+        // 先同步設定路線顏色，再開始非同步載入。
+        ShuttleMonitorMap.setRouteConfig(shuttleMonitorRouteConfig);
         loadShuttleMonitorRoute();
         loadShuttleMonitorRouteGeometry();
         ShuttleMonitorWebSocket.send({ type: "online:list" });
@@ -451,6 +524,7 @@ function renderVehiclePanel() {
 
     vehicleList.innerHTML = drivers.map(driver => {
         const vehicleLabel =
+            window.getShuttleDisplayName?.(driver.personnel_number) ||
             driver.personnel_number ||
             driver.username ||
             driver.personnel_name ||
@@ -986,7 +1060,10 @@ function updateMapTypeSettings() {
 // ========================================
 
 function updateMapDisplaySettings() {
-    const options = document.querySelectorAll(".map-display-option");
+    const options = document.querySelectorAll(
+        ".map-display-option[data-map-display-mode]"
+    );
+
     options.forEach(option => {
         const mode = option.dataset.mapDisplayMode;
         const isActive = mode === ShuttleMonitorMap.getDisplayMode();

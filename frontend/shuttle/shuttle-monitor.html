@@ -19,7 +19,8 @@
         <!-- Header -->
         <header class="monitor-header">
 
-            <div>
+            <!-- 左側：系統品牌 -->
+            <div class="header-brand">
                 <div class="system-title">
                     接駁車中心
                 </div>
@@ -29,20 +30,19 @@
                 </div>
             </div>
 
+            <!-- 中央：目前路線名稱 -->
+            <div id="route-badge" class="route-badge" aria-live="polite">
+                接駁路線監控
+            </div>
+
+            <!-- 右側：登出 -->
             <div class="header-actions">
-
-                <div class="route-badge">
-                    A 路線監控
-                </div>
-
                 <button id="logout-btn" type="button">
                     登出
                 </button>
-
             </div>
 
         </header>
-
 
         <!-- Map -->
         <section class="map-section">

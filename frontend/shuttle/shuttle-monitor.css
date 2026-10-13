@@ -1,24 +1,23 @@
+/* ========================================
+   Shuttle Monitor — Base
+======================================== */
+
 * {
     box-sizing: border-box;
 }
 
 html,
 body {
-    margin: 0;
     width: 100%;
     height: 100%;
+    margin: 0;
     overflow: hidden;
-
-
     font-family:
         Inter,
         "Noto Sans TC",
         "Microsoft JhengHei",
         sans-serif;
-
     background: #0b0f14;
-
-
 }
 
 body {
@@ -26,35 +25,32 @@ body {
 }
 
 .monitor-app {
-    width: 100%;
-    height: 100vh;
-
-
     display: flex;
     flex-direction: column;
-
-
+    width: 100%;
+    height: 100vh;
 }
 
 /* ========================================
-Header
+   Header
 ======================================== */
 
 .monitor-header {
-    height: 72px;
-    flex-shrink: 0;
-
-
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
-
+    flex-shrink: 0;
+    width: 100%;
+    height: 84px;
     padding: 0 24px;
-
     background: #11161d;
     border-bottom: 1px solid #242b34;
+}
 
-
+.header-brand {
+    grid-column: 1;
+    justify-self: start;
+    min-width: 0;
 }
 
 .system-title {
@@ -65,110 +61,147 @@ Header
 
 .system-subtitle {
     margin-top: 3px;
-
-
     font-family: "JetBrains Mono", monospace;
-
     font-size: 11px;
     letter-spacing: 0.12em;
-
     color: #7f8996;
     text-transform: uppercase;
-
-
 }
 
+/* 中央路線標題 */
+
 .route-badge {
-    padding: 7px 12px;
+    grid-column: 2;
+    justify-self: center;
+    min-width: 0;
+    max-width: 100%;
+    padding: 8px 20px;
+    border: 1px solid rgba(242, 193, 78, 0.28);
+    border-radius: 8px;
+    background: rgba(242, 193, 78, 0.06);
+    color: #f2c14e;
+    font-family:
+        Inter,
+        "Noto Sans TC",
+        "Microsoft JhengHei",
+        sans-serif;
+    font-size: clamp(20px, 2.2vw, 28px);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    line-height: 1.3;
+    text-align: center;
+    white-space: nowrap;
+}
 
+/* 右側操作 */
 
+.header-actions {
+    grid-column: 3;
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#logout-btn {
+    padding: 9px 14px;
     border: 1px solid #39424e;
     border-radius: 6px;
-
-    font-family: "JetBrains Mono", monospace;
+    background: #171d25;
+    color: #f2f4f7;
+    font-family:
+        Inter,
+        "Noto Sans TC",
+        "Microsoft JhengHei",
+        sans-serif;
     font-size: 12px;
     font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+}
 
-    letter-spacing: 0.08em;
+#logout-btn {
+    background: #242b34;
+}
 
-    background: #171d25;
-    color: #f2c14e;
+/* 地圖高度配合新的 Header */
 
-
+#shuttleMap {
+    width: 100%;
+    height: 100%;
 }
 
 /* ========================================
-Map
+Header — Mobile
+======================================== */
+
+@media (max-width: 600px) {
+    .monitor-header {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: 1fr auto;
+        column-gap: 8px;
+        row-gap: 0;
+        height: 94px;
+        padding: 8px 12px;
+    }
+
+    .header-brand {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .system-title {
+        font-size: 16px;
+    }
+
+    .system-subtitle {
+        font-size: 9px;
+    }
+
+    .route-badge {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-self: center;
+        max-width: 100%;
+        padding: 3px 8px 5px;
+        border: none;
+        background: transparent;
+        font-size: clamp(18px, 5vw, 23px);
+        letter-spacing: 0.04em;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .header-actions {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    #logout-btn {
+        padding: 7px 10px;
+        font-size: 11px;
+    }
+
+}
+
+#logout-btn:hover {
+    background: #242b34;
+}
+
+/* ========================================
+   Map
 ======================================== */
 
 .map-section {
+    position: relative;
     flex: 1;
     min-height: 0;
-
-
-    position: relative;
-
-
 }
 
 #shuttleMap {
     width: 100%;
     height: calc(100vh - 72px);
 }
-
-/* ========================================
-Shuttle Marker
-======================================== */
-
-.shuttle-marker {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-
-
-    pointer-events: none;
-
-
-}
-
-.shuttle-dot {
-    width: 8px;
-    height: 8px;
-
-
-    border-radius: 50%;
-
-    background: #f2c14e;
-
-    box-shadow:
-        0 0 0 2px rgba(242, 193, 78, 0.18),
-        0 0 10px rgba(242, 193, 78, 0.55);
-
-
-}
-
-.shuttle-label {
-    padding: 2px 4px;
-
-
-    border-radius: 3px;
-
-    background: rgba(11, 15, 20, 0.86);
-
-    font-family: "JetBrains Mono", monospace;
-    font-size: 10px;
-    font-weight: 700;
-
-    color: #f2f4f7;
-
-    white-space: nowrap;
-
-
-}
-
-/* ========================================
-Google Maps UI 微調
-======================================== */
 
 .gm-style {
     font-family:
@@ -178,30 +211,125 @@ Google Maps UI 微調
         sans-serif;
 }
 
-.header-actions {
-    display: flex;
+/* ========================================
+   GPS Marker — Fixed Anchor
+   Keep the marker at its original GPS position.
+======================================== */
+
+.shuttle-marker {
+    position: relative;
+    display: block;
+    width: 8px;
+    height: 8px;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.shuttle-dot {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--shuttle-marker-color, #F02DAB);
+    box-shadow:
+        0 0 0 2px color-mix(in srgb,
+            var(--shuttle-marker-color, #F02DAB) 20%,
+            transparent),
+        0 0 8px color-mix(in srgb,
+            var(--shuttle-marker-color, #F02DAB) 55%,
+            transparent);
+}
+
+/* GPS accuracy warnings */
+
+.shuttle-marker-accuracy-warning .shuttle-dot {
+    background: #facc15;
+    box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.22);
+}
+
+.shuttle-marker-accuracy-poor .shuttle-dot {
+    background: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+
+/* Independent vehicle-label overlay */
+
+.shuttle-label-overlay {
+    position: absolute;
+    z-index: 1000;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.shuttle-leader-lines {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.shuttle-leader-line {
+    fill: none;
+    stroke: rgba(148, 163, 184, 0.85);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+}
+
+/* Label positions are controlled by JavaScript */
+
+.shuttle-label {
+    position: absolute;
+    z-index: 1;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-}
-
-#logout-btn {
-    padding: 7px 12px;
-
-    border: 1px solid #39424e;
-    border-radius: 6px;
-
-    background: #171d25;
+    gap: 3px;
+    padding: 3px 5px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 4px;
+    background: rgba(11, 15, 20, 0.94);
     color: #f2f4f7;
-
     font-family: "JetBrains Mono", monospace;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 700;
-
-    cursor: pointer;
+    line-height: 14px;
+    white-space: nowrap;
+    pointer-events: none;
 }
 
-#logout-btn:hover {
-    background: #242b34;
+.shuttle-label.shuttle-marker-accuracy-warning {
+    border-color: #facc15;
+}
+
+.shuttle-label.shuttle-marker-accuracy-poor {
+    border-color: #ef4444;
+}
+
+.shuttle-label .shuttle-accuracy-warning {
+    display: none;
+    color: #facc15;
+    font-size: 11px;
+    line-height: 12px;
+}
+
+/* Accuracy warning positioned separately from the GPS anchor */
+
+.shuttle-accuracy-warning {
+    position: absolute;
+    top: -14px;
+    left: 12px;
+    display: none;
+    color: #facc15;
+    font-size: 12px;
+    line-height: 12px;
+    white-space: nowrap;
 }
 
 /* ========================================
@@ -210,16 +338,12 @@ Google Maps UI 微調
 
 .bottom-ui {
     position: fixed;
-
-    left: 0;
+    z-index: 1000;
     right: 0;
     bottom: 0;
-
-    z-index: 1000;
-
+    left: 0;
     pointer-events: none;
 }
-
 
 /* ========================================
    Bottom Sheet
@@ -227,71 +351,39 @@ Google Maps UI 微調
 
 .bottom-sheet {
     position: absolute;
-
-    left: 0;
     right: 0;
     bottom: 64px;
-
+    left: 0;
     height: 0;
-
     overflow: hidden;
-
-    background: rgba(17, 22, 29, 0.98);
-
     border-top: 1px solid #242b34;
-
+    background: rgba(17, 22, 29, 0.98);
     transform: translateY(100%);
-
     transition:
         height 0.25s ease,
         transform 0.25s ease;
-
     pointer-events: auto;
 }
 
-
-/* ========================================
-   Bottom Sheet Expanded
-======================================== */
-
 .bottom-ui.expanded .bottom-sheet {
     height: min(45vh, 420px);
-
     transform: translateY(0);
 }
-
-
-/* ========================================
-   Bottom Sheet Handle
-======================================== */
 
 .bottom-sheet-handle {
     width: 40px;
     height: 4px;
-
     margin: 10px auto 8px;
-
     border-radius: 999px;
-
     background: #39424e;
 }
 
-
-/* ========================================
-   Bottom Sheet Content
-======================================== */
-
 .bottom-sheet-content {
     height: calc(100% - 22px);
-
-    padding: 8px 20px 20px;
-
-    overflow-y: auto;
+    padding: 8px 14px 16px;
     overflow-x: hidden;
+    overflow-y: auto;
 }
-
-
-/* Scrollbar */
 
 .bottom-sheet-content::-webkit-scrollbar {
     width: 5px;
@@ -302,10 +394,9 @@ Google Maps UI 微調
 }
 
 .bottom-sheet-content::-webkit-scrollbar-thumb {
-    background: #39424e;
     border-radius: 999px;
+    background: #39424e;
 }
-
 
 /* ========================================
    Bottom Navigation
@@ -313,783 +404,120 @@ Google Maps UI 微調
 
 .bottom-navigation {
     position: relative;
-
-    width: 100%;
-    height: 64px;
-
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-
-    background: #11161d;
-
+    width: 100%;
+    height: 64px;
     border-top: 1px solid #242b34;
-
+    background: #11161d;
     pointer-events: auto;
 }
 
-
-/* ========================================
-   Bottom Navigation Item
-======================================== */
-
 .bottom-nav-item {
     position: relative;
-
     display: flex;
     flex-direction: column;
-
     align-items: center;
     justify-content: center;
-
     gap: 4px;
-
     border: none;
-
     background: transparent;
-
     color: #7f8996;
-
     cursor: pointer;
-
     transition:
         background 0.18s ease,
         color 0.18s ease;
 }
 
-
 .bottom-nav-item:hover {
     background: #171d25;
-
     color: #c7ced6;
 }
-
 
 .bottom-nav-item.active {
     color: #f2c14e;
 }
 
-
 .bottom-nav-item.active::before {
-    content: "";
-
     position: absolute;
-
     top: 0;
-    left: 25%;
     right: 25%;
-
+    left: 25%;
     height: 2px;
-
     background: #f2c14e;
+    content: "";
 }
-
-
-/* ========================================
-   Navigation Icon
-======================================== */
 
 .bottom-nav-icon {
     font-size: 15px;
-
     line-height: 1;
 }
 
-
 .bottom-nav-label {
     font-size: 11px;
-
     font-weight: 600;
-
     letter-spacing: 0.03em;
 }
 
-
 /* ========================================
-   Empty Panel
+   Panel Shared Elements
 ======================================== */
 
 .bottom-panel-empty {
     padding: 24px 4px;
 }
 
-
 .bottom-panel-empty-title {
     font-size: 18px;
-
     font-weight: 700;
 }
-
 
 .bottom-panel-empty-text {
     margin-top: 7px;
-
-    font-size: 12px;
-
     color: #7f8996;
+    font-size: 12px;
 }
-
-
-/* ========================================
-   Panel Header
-======================================== */
 
 .bottom-panel-header {
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
-    padding: 4px 0 14px;
-
+    padding: 4px 0 10px;
     border-bottom: 1px solid #242b34;
 }
-
 
 .bottom-panel-title {
     font-size: 18px;
-
     font-weight: 700;
 }
-
 
 .bottom-panel-subtitle {
     margin-top: 4px;
-
-    font-size: 11px;
-
     color: #7f8996;
+    font-size: 11px;
 }
-
 
 .bottom-panel-status {
     padding: 4px 8px;
-
     border: 1px solid rgba(102, 194, 122, 0.25);
-
     border-radius: 5px;
-
     background: rgba(102, 194, 122, 0.06);
-
-    font-family: "JetBrains Mono", monospace;
-
-    font-size: 9px;
-
-    font-weight: 700;
-
-    letter-spacing: 0.08em;
-
     color: #66c27a;
-}
-
-
-/* ========================================
-   Communication List
-======================================== */
-
-.communication-list {
-    display: flex;
-
-    flex-direction: column;
-}
-
-
-/* ========================================
-   Communication Item
-======================================== */
-
-.communication-item {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    min-height: 76px;
-
-    padding: 12px 0;
-
-    border-bottom: 1px solid #242b34;
-}
-
-
-.communication-item:last-child {
-    border-bottom: none;
-}
-
-
-/* ========================================
-   Communication Person
-======================================== */
-
-.communication-person {
-    display: flex;
-
-    align-items: flex-start;
-
-    gap: 10px;
-
-    min-width: 0;
-}
-
-
-.communication-status-dot {
-    flex-shrink: 0;
-
-    width: 8px;
-    height: 8px;
-
-    margin-top: 5px;
-
-    border-radius: 50%;
-
-    background: #66c27a;
-
-    box-shadow:
-        0 0 0 2px rgba(102, 194, 122, 0.12);
-}
-
-
-/* ========================================
-   GPS Status
-======================================== */
-
-.communication-status-dot.online {
-    background: #66c27a;
-
-    box-shadow:
-        0 0 0 2px rgba(102, 194, 122, 0.12);
-}
-
-
-.communication-status-dot.offline {
-    background: #e05252;
-
-    box-shadow:
-        0 0 0 2px rgba(224, 82, 82, 0.12);
-}
-
-
-.communication-status-dot.no_location {
-    background: #626c78;
-
-    box-shadow:
-        0 0 0 2px rgba(98, 108, 120, 0.12);
-}
-
-
-.communication-person-info {
-    min-width: 0;
-}
-
-
-.communication-person-name {
-    font-size: 14px;
-
-    font-weight: 650;
-
-    color: #f2f4f7;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-
-.communication-person-number {
-    margin-top: 3px;
-
     font-family: "JetBrains Mono", monospace;
-
-    font-size: 10px;
-
-    color: #7f8996;
-}
-
-
-.communication-person-context {
-    margin-top: 3px;
-
-    font-size: 10px;
-
-    color: #626c78;
-}
-
-
-/* ========================================
-   Call Button
-======================================== */
-
-.communication-call-button {
-    flex-shrink: 0;
-
-    min-width: 58px;
-    height: 32px;
-
-    margin-left: 12px;
-
-    padding: 0 10px;
-
-    border: 1px solid rgba(242, 193, 78, 0.28);
-
-    border-radius: 6px;
-
-    background: rgba(242, 193, 78, 0.07);
-
-    color: #f2c14e;
-
-    font-size: 11px;
-
+    font-size: 9px;
     font-weight: 700;
-
-    cursor: pointer;
-}
-
-
-.communication-call-button:hover {
-    background: rgba(242, 193, 78, 0.14);
-
-    border-color: rgba(242, 193, 78, 0.45);
-}
-
-/* ========================================
-   Map Display Settings
-======================================== */
-
-.map-display-settings {
-    padding-top: 4px;
-}
-
-
-.map-display-option {
-    width: 100%;
-
-    display: flex;
-    align-items: center;
-
-    gap: 12px;
-
-    padding: 14px 12px;
-
-    margin-bottom: 8px;
-
-    border: 1px solid #242b34;
-    border-radius: 8px;
-
-    background: #11161d;
-
-    color: #f2f4f7;
-
-    text-align: left;
-
-    cursor: pointer;
-
-    transition:
-        background 0.18s ease,
-        border-color 0.18s ease;
-}
-
-
-.map-display-option:hover {
-    background: #171d25;
-}
-
-
-.map-display-option.active {
-    border-color: rgba(242, 193, 78, 0.45);
-
-    background: rgba(242, 193, 78, 0.06);
-}
-
-
-.map-display-option-radio {
-    flex-shrink: 0;
-
-    width: 12px;
-    height: 12px;
-
-    border: 2px solid #626c78;
-
-    border-radius: 50%;
-}
-
-
-.map-display-option.active .map-display-option-radio {
-    border-color: #f2c14e;
-
-    background: #f2c14e;
-
-    box-shadow:
-        0 0 0 3px rgba(242, 193, 78, 0.12);
-}
-
-
-.map-display-option-content {
-    display: flex;
-
-    flex-direction: column;
-
-    min-width: 0;
-}
-
-
-.map-display-option-title {
-    font-size: 13px;
-
-    font-weight: 650;
-}
-
-
-.map-display-option-text {
-    margin-top: 3px;
-
-    font-size: 10px;
-
-    color: #7f8996;
-}
-
-/* ========================================
-   Shuttle Call Window
-======================================== */
-
-.shuttle-call-window {
-    position: fixed;
-
-    inset: 0;
-
-    z-index: 2000;
-
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    padding: 20px;
-
-    background: rgba(0, 0, 0, 0.62);
-
-    backdrop-filter: blur(3px);
-
-    pointer-events: auto;
-}
-
-
-.shuttle-call-window.hidden {
-    display: none;
-}
-
-
-/* ========================================
-   Call Card
-======================================== */
-
-.shuttle-call-card {
-    width: min(360px, calc(100vw - 40px));
-
-    padding: 30px 24px 24px;
-
-    border: 1px solid #2b333d;
-    border-radius: 12px;
-
-    background: #11161d;
-
-    box-shadow:
-        0 20px 50px rgba(0, 0, 0, 0.45),
-        0 0 0 1px rgba(255, 255, 255, 0.02);
-
-    text-align: center;
-}
-
-
-/* ========================================
-   Call Icon
-======================================== */
-
-.shuttle-call-icon {
-    width: 56px;
-    height: 56px;
-
-    margin: 0 auto 16px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border: 1px solid rgba(242, 193, 78, 0.30);
-    border-radius: 50%;
-
-    background: rgba(242, 193, 78, 0.08);
-
-    font-size: 23px;
-
-    box-shadow:
-        0 0 0 5px rgba(242, 193, 78, 0.035);
-}
-
-
-/*
- * 呼叫建立後的輕微提示動畫。
- * 不做持續快速動畫，避免監控畫面干擾。
- */
-
-.shuttle-call-window:not(.hidden) .shuttle-call-icon {
-    animation:
-        shuttle-call-pulse 2.2s ease-in-out infinite;
-}
-
-
-@keyframes shuttle-call-pulse {
-
-    0%,
-    100% {
-        transform: scale(1);
-
-        box-shadow:
-            0 0 0 5px rgba(242, 193, 78, 0.035);
-    }
-
-    50% {
-        transform: scale(1.035);
-
-        box-shadow:
-            0 0 0 8px rgba(242, 193, 78, 0.025);
-    }
-
-}
-
-
-/* ========================================
-   Call State
-======================================== */
-
-.shuttle-call-state {
-    font-family:
-        "JetBrains Mono",
-        monospace;
-
-    font-size: 11px;
-
-    font-weight: 700;
-
-    letter-spacing: 0.10em;
-
-    color: #f2c14e;
-}
-
-
-/* ========================================
-   Call Person
-======================================== */
-
-.shuttle-call-name {
-    margin-top: 12px;
-
-    font-size: 20px;
-
-    font-weight: 700;
-
-    color: #f2f4f7;
-
-    line-height: 1.3;
-}
-
-
-.shuttle-call-number {
-    margin-top: 5px;
-
-    font-family:
-        "JetBrains Mono",
-        monospace;
-
-    font-size: 11px;
-
-    color: #7f8996;
-}
-
-
-.shuttle-call-route {
-    margin-top: 6px;
-
-    font-size: 11px;
-
-    color: #626c78;
-}
-
-
-/* ========================================
-   Call Status
-======================================== */
-
-.shuttle-call-status {
-    margin-top: 20px;
-
-    min-height: 38px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    padding: 9px 12px;
-
-    border: 1px solid #242b34;
-    border-radius: 7px;
-
-    background: #0b0f14;
-
-    font-size: 11px;
-
-    line-height: 1.4;
-
-    color: #aeb6c0;
-}
-
-
-/* ========================================
-   Call Timer
-======================================== */
-
-.shuttle-call-timer {
-    margin-top: 14px;
-
-    font-family:
-        "JetBrains Mono",
-        monospace;
-
-    font-size: 24px;
-
-    font-weight: 700;
-
     letter-spacing: 0.08em;
-
-    color: #626c78;
-
-    font-variant-numeric: tabular-nums;
 }
-
-
-/*
- * CONNECTED 狀態下計時器醒目。
- *
- * 目前 JS 沒有替 timer 加 class，
- * 因此透過 Call Window 內的 state 狀態文字
- * 搭配 :has() 判斷。
- */
-
-
 
 /* ========================================
-   Hangup Button
+   Vehicle Cards
 ======================================== */
 
-.shuttle-call-hangup {
-    width: 100%;
-
-    height: 44px;
-
-    margin-top: 22px;
-
-    border: 1px solid rgba(224, 82, 82, 0.40);
-    border-radius: 7px;
-
-    background: rgba(224, 82, 82, 0.10);
-
-    color: #e05252;
-
-    font-size: 12px;
-
-    font-weight: 700;
-
-    letter-spacing: 0.04em;
-
-    cursor: pointer;
-
-    transition:
-        background 0.18s ease,
-        border-color 0.18s ease,
-        transform 0.08s ease;
-}
-
-
-.shuttle-call-hangup:hover {
-    background: rgba(224, 82, 82, 0.18);
-
-    border-color: rgba(224, 82, 82, 0.65);
-}
-
-
-.shuttle-call-hangup:active {
-    background: rgba(224, 82, 82, 0.24);
-
-    transform: scale(0.985);
-}
-
-
-/* ========================================
-   Small Screen
-======================================== */
-
-@media (max-width: 520px) {
-
-    .shuttle-call-window {
-        padding: 16px;
-    }
-
-
-    .shuttle-call-card {
-        width: calc(100vw - 32px);
-
-        padding: 26px 20px 20px;
-
-        border-radius: 11px;
-    }
-
-
-    .shuttle-call-icon {
-        width: 52px;
-        height: 52px;
-
-        margin-bottom: 14px;
-
-        font-size: 21px;
-    }
-
-
-    .shuttle-call-name {
-        font-size: 18px;
-    }
-
-
-    .shuttle-call-status {
-        margin-top: 18px;
-    }
-
-
-    .shuttle-call-timer {
-        font-size: 22px;
-    }
-
-
-    .shuttle-call-hangup {
-        height: 44px;
-
-        margin-top: 20px;
-    }
-
-}
-
-/* =========================================
-   Shuttle Monitor - Compact Card Panels
-   ========================================= */
-
-/* 車輛面板：緊湊網格 */
 .shuttle-vehicle-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill,
-            minmax(100px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     align-content: start;
+    gap: 10px;
     padding: 8px 0 16px;
 }
 
@@ -1100,8 +528,8 @@ Google Maps UI 微調
     align-items: center;
     justify-content: center;
     gap: 12px;
-    aspect-ratio: 1 / 0.82;
     min-width: 0;
+    aspect-ratio: 1 / 0.82;
     padding: 10px 6px;
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 14px;
@@ -1112,8 +540,8 @@ Google Maps UI 微調
 }
 
 .shuttle-vehicle-card:hover {
-    background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.20);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .shuttle-vehicle-id {
@@ -1129,6 +557,10 @@ Google Maps UI 微調
     white-space: nowrap;
 }
 
+/* ========================================
+   Status Lights
+======================================== */
+
 .shuttle-vehicle-status,
 .communication-status-dot {
     flex: 0 0 auto;
@@ -1137,6 +569,10 @@ Google Maps UI 微調
     border-radius: 50%;
     background: #7b8491;
     box-shadow: 0 0 0 3px rgba(123, 132, 145, 0.12);
+}
+
+.communication-status-dot {
+    margin-top: 5px;
 }
 
 .shuttle-vehicle-status.online,
@@ -1163,13 +599,15 @@ Google Maps UI 微調
     box-shadow: 0 0 0 3px rgba(123, 132, 145, 0.12);
 }
 
-/* 通訊面板：多欄字卡 */
+/* ========================================
+   Communication Cards
+======================================== */
+
 .communication-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill,
-            minmax(220px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     align-content: start;
+    gap: 10px;
     padding: 8px 0 16px;
 }
 
@@ -1192,10 +630,10 @@ Google Maps UI 微調
 
 .communication-person {
     display: flex;
+    flex: 1 1 auto;
     align-items: center;
     gap: 10px;
     min-width: 0;
-    flex: 1 1 auto;
 }
 
 .communication-person-info {
@@ -1224,6 +662,27 @@ Google Maps UI 微調
     line-height: 1.4;
 }
 
+.communication-person-context {
+    margin-top: 3px;
+    color: #626c78;
+    font-size: 10px;
+}
+
+.communication-call-button {
+    flex-shrink: 0;
+    min-width: 58px;
+    height: 32px;
+    margin-left: 12px;
+    padding: 0 10px;
+    border: 1px solid rgba(242, 193, 78, 0.28);
+    border-radius: 6px;
+    background: rgba(242, 193, 78, 0.07);
+    color: #f2c14e;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
 .communication-item .communication-call-button {
     flex: 0 0 auto;
     min-height: 34px;
@@ -1231,27 +690,238 @@ Google Maps UI 微調
     border-radius: 9px;
 }
 
-/* 面板內容縮小留白 */
-.bottom-sheet-content {
-    padding: 8px 14px 16px;
+.communication-call-button:hover {
+    border-color: rgba(242, 193, 78, 0.45);
+    background: rgba(242, 193, 78, 0.14);
 }
 
-.bottom-panel-header {
-    padding-bottom: 10px;
+/* ========================================
+   Map Display Settings
+======================================== */
+
+.map-display-settings {
+    padding-top: 4px;
 }
 
-/* 手機版：避免卡片過窄 */
+.map-display-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 14px 12px;
+    border: 1px solid #242b34;
+    border-radius: 8px;
+    background: #11161d;
+    color: #f2f4f7;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease;
+}
+
+.map-display-option:hover {
+    background: #171d25;
+}
+
+.map-display-option.active {
+    border-color: rgba(242, 193, 78, 0.45);
+    background: rgba(242, 193, 78, 0.06);
+}
+
+.map-display-option-radio {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #626c78;
+    border-radius: 50%;
+}
+
+.map-display-option.active .map-display-option-radio {
+    border-color: #f2c14e;
+    background: #f2c14e;
+    box-shadow: 0 0 0 3px rgba(242, 193, 78, 0.12);
+}
+
+.map-display-option-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.map-display-option-title {
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.map-display-option-text {
+    margin-top: 3px;
+    color: #7f8996;
+    font-size: 10px;
+}
+
+/* ========================================
+   Shuttle Call Window
+======================================== */
+
+.shuttle-call-window {
+    position: fixed;
+    z-index: 2000;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.62);
+    backdrop-filter: blur(3px);
+    pointer-events: auto;
+}
+
+.shuttle-call-window.hidden {
+    display: none;
+}
+
+.shuttle-call-card {
+    width: min(360px, calc(100vw - 40px));
+    padding: 30px 24px 24px;
+    border: 1px solid #2b333d;
+    border-radius: 12px;
+    background: #11161d;
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.02);
+    text-align: center;
+}
+
+.shuttle-call-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    border: 1px solid rgba(242, 193, 78, 0.30);
+    border-radius: 50%;
+    background: rgba(242, 193, 78, 0.08);
+    font-size: 23px;
+    box-shadow: 0 0 0 5px rgba(242, 193, 78, 0.035);
+}
+
+.shuttle-call-window:not(.hidden) .shuttle-call-icon {
+    animation: shuttle-call-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes shuttle-call-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 5px rgba(242, 193, 78, 0.035);
+    }
+
+    50% {
+        transform: scale(1.035);
+        box-shadow: 0 0 0 8px rgba(242, 193, 78, 0.025);
+    }
+}
+
+.shuttle-call-state {
+    color: #f2c14e;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+}
+
+.shuttle-call-name {
+    margin-top: 12px;
+    color: #f2f4f7;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.shuttle-call-number {
+    margin-top: 5px;
+    color: #7f8996;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+}
+
+.shuttle-call-route {
+    margin-top: 6px;
+    color: #626c78;
+    font-size: 11px;
+}
+
+.shuttle-call-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    margin-top: 20px;
+    padding: 9px 12px;
+    border: 1px solid #242b34;
+    border-radius: 7px;
+    background: #0b0f14;
+    color: #aeb6c0;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.shuttle-call-timer {
+    margin-top: 14px;
+    color: #626c78;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-variant-numeric: tabular-nums;
+}
+
+.shuttle-call-hangup {
+    width: 100%;
+    height: 44px;
+    margin-top: 22px;
+    border: 1px solid rgba(224, 82, 82, 0.40);
+    border-radius: 7px;
+    background: rgba(224, 82, 82, 0.10);
+    color: #e05252;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.08s ease;
+}
+
+.shuttle-call-hangup:hover {
+    border-color: rgba(224, 82, 82, 0.65);
+    background: rgba(224, 82, 82, 0.18);
+}
+
+.shuttle-call-hangup:active {
+    background: rgba(224, 82, 82, 0.24);
+    transform: scale(0.985);
+}
+
+/* ========================================
+   Responsive — Tablet and Mobile
+======================================== */
+
 @media (max-width: 600px) {
     .shuttle-vehicle-list {
-        grid-template-columns: repeat(auto-fill,
-                minmax(82px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
         gap: 8px;
     }
 
     .shuttle-vehicle-card {
-        border-radius: 12px;
         gap: 10px;
         padding: 8px 4px;
+        border-radius: 12px;
     }
 
     .shuttle-vehicle-id {
@@ -1267,5 +937,41 @@ Google Maps UI 微調
         min-height: 62px;
         padding: 9px 10px;
         border-radius: 12px;
+    }
+}
+
+@media (max-width: 520px) {
+    .shuttle-call-window {
+        padding: 16px;
+    }
+
+    .shuttle-call-card {
+        width: calc(100vw - 32px);
+        padding: 26px 20px 20px;
+        border-radius: 11px;
+    }
+
+    .shuttle-call-icon {
+        width: 52px;
+        height: 52px;
+        margin-bottom: 14px;
+        font-size: 21px;
+    }
+
+    .shuttle-call-name {
+        font-size: 18px;
+    }
+
+    .shuttle-call-status {
+        margin-top: 18px;
+    }
+
+    .shuttle-call-timer {
+        font-size: 22px;
+    }
+
+    .shuttle-call-hangup {
+        height: 44px;
+        margin-top: 20px;
     }
 }

@@ -58,53 +58,56 @@ const onlineUsers = new Map();
 
 const activeCalls = new Map();
 
-// ========================================
-// Broadcast Online Users
-// ========================================
 
-function broadcastOnlineUsers() {
+function getOnlineUsersFor(recipientUser) {
+    const isShuttleWorkspace =
+        typeof recipientUser?.access_context === "string" &&
+        /^營區開放_[A-E]路線$/.test(
+            recipientUser.access_context
+        );
 
     const users = [];
 
-    for (const [
-        userId,
-        userSocket
-    ] of onlineUsers.entries()) {
-
+    for (const userSocket of onlineUsers.values()) {
         if (
             userSocket.readyState !== 1 ||
             !userSocket.user
+        ) {
+            continue;
+        }
+
+        const user = userSocket.user;
+
+        // 接駁車監控端只能取得同一路線的線上名單。
+        if (
+            isShuttleWorkspace &&
+            user.access_context !== recipientUser.access_context
         ) {
             continue;
         }
 
         users.push({
-            user_id:
-                userSocket.user.user_id,
-
-            username:
-                userSocket.user.username,
-
-            role_id:
-                userSocket.user.role_id,
-
-            access_context:
-                userSocket.user.access_context,
-
-            personnel_id:
-                userSocket.user.personnel_id,
-
-            personnel_number:
-                userSocket.user.personnel_number,
-
-            personnel_name:
-                userSocket.user.personnel_name
+            user_id: user.user_id,
+            username: user.username,
+            role_id: user.role_id,
+            access_context: user.access_context,
+            personnel_id: user.personnel_id,
+            personnel_number: user.personnel_number,
+            personnel_name: user.personnel_name
         });
     }
 
+    return users;
+}
 
+
+// ========================================
+// Broadcast Online Users
+// ========================================
+
+
+function broadcastOnlineUsers() {
     for (const userSocket of onlineUsers.values()) {
-
         if (
             userSocket.readyState !== 1 ||
             !userSocket.user
@@ -112,15 +115,13 @@ function broadcastOnlineUsers() {
             continue;
         }
 
-        userSocket.send(
-            JSON.stringify({
-                type: "online:list",
-                users
-            })
-        );
+        userSocket.send(JSON.stringify({
+            type: "online:list",
+            users: getOnlineUsersFor(userSocket.user)
+        }));
     }
-
 }
+
 
 // ========================================
 // Temporary Force Logout
@@ -310,55 +311,16 @@ wss.on("connection", (socket) => {
                 return;
             }
 
+
             if (data.type === "online:list") {
-
-                const users = [];
-
-                for (const [
-                    userId,
-                    userSocket
-                ] of onlineUsers.entries()) {
-
-                    if (
-                        userSocket.readyState !== 1 ||
-                        !userSocket.user
-                    ) {
-                        continue;
-                    }
-
-                    users.push({
-                        user_id:
-                            userSocket.user.user_id,
-
-                        username:
-                            userSocket.user.username,
-
-                        role_id:
-                            userSocket.user.role_id,
-
-                        access_context:
-                            userSocket.user.access_context,
-
-                        personnel_id:
-                            userSocket.user.personnel_id,
-
-                        personnel_number:
-                            userSocket.user.personnel_number,
-
-                        personnel_name:
-                            userSocket.user.personnel_name
-                    });
-                }
-
-                socket.send(
-                    JSON.stringify({
-                        type: "online:list",
-                        users
-                    })
-                );
+                socket.send(JSON.stringify({
+                    type: "online:list",
+                    users: getOnlineUsersFor(socket.user)
+                }));
 
                 return;
             }
+
 
             if (data.type === "call") {
 

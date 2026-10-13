@@ -2,6 +2,8 @@ window.ShuttleMonitorMap = (() => {
 
     let shuttleMap = null;
 
+    let shuttleLabelOverlay = null;
+
     const shuttleMarkers = new Map();
 
     let displayMode = "all";
@@ -10,6 +12,42 @@ window.ShuttleMonitorMap = (() => {
 
     let outboundPolyline = null;
     let inboundPolyline = null;
+
+
+    let shuttleRouteConfig = null;
+    let shuttleRouteColor = "#22C55E";
+
+    const SHUTTLE_ROUTE_COLOR_FALLBACK = "#7B4DFF";
+
+
+    let shuttleMarkerColor = "#F02DAB";
+
+    function setMarkerColor(color) {
+        shuttleMarkerColor = color || "#F02DAB";
+
+        for (const marker of shuttleMarkers.values()) {
+            const markerElement = marker?.__shuttleMarkerElement;
+
+            if (markerElement) {
+                markerElement.style.setProperty(
+                    "--shuttle-marker-color",
+                    shuttleMarkerColor
+                );
+            }
+        }
+    }
+
+
+    function setRouteConfig(config) {
+        shuttleRouteConfig = config || null;
+
+        if (config?.color) {
+            shuttleRouteColor = config.color;
+        } else {
+            shuttleRouteColor = SHUTTLE_ROUTE_COLOR_FALLBACK;
+        }
+    }
+
 
 
     // ========================================
@@ -91,6 +129,388 @@ window.ShuttleMonitorMap = (() => {
     }
 
 
+    function createShuttleLabelOverlay(map) {
+        class ShuttleLabelOverlay extends google.maps.OverlayView {
+            constructor() {
+                super();
+
+                this.vehicles = new Map();
+                this.labels = new Map();
+                this.root = null;
+                this.svg = null;
+                this.lastLayoutKey = "";
+            }
+
+            onAdd() {
+                this.root = document.createElement("div");
+                this.root.className = "shuttle-label-overlay";
+
+                this.svg = document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "svg"
+                );
+
+                this.svg.classList.add("shuttle-leader-lines");
+                this.root.appendChild(this.svg);
+
+                // 直接使用地圖容器作為標籤層的定位基準
+                map.getDiv().appendChild(this.root);
+
+                // 補上圖層建立前已存在的車號
+                for (const label of this.labels.values()) {
+                    this.root.appendChild(label);
+                }
+            }
+
+            updateVehicles(vehicles) {
+                const next = new Map();
+
+                vehicles.forEach(vehicle => {
+                    next.set(vehicle.personnelNumber, vehicle);
+                });
+
+                this.vehicles = next;
+
+                // 移除已不需要顯示的標籤
+                for (const [id, element] of this.labels) {
+                    if (!next.has(id)) {
+                        element.remove();
+                        this.labels.delete(id);
+                    }
+                }
+
+                // 建立或更新標籤
+                for (const [id, vehicle] of next) {
+                    let label = this.labels.get(id);
+
+                    if (!label) {
+                        label = document.createElement("div");
+                        label.className = "shuttle-label";
+
+                        const warning = document.createElement("span");
+                        warning.className = "shuttle-accuracy-warning";
+                        warning.textContent = "⚠";
+
+                        const text = document.createElement("span");
+                        text.className = "shuttle-label-text";
+
+                        label.append(warning, text);
+                        this.root?.appendChild(label);
+
+                        this.labels.set(id, label);
+
+                        if (this.root && label.parentElement !== this.root) {
+                            this.root.appendChild(label);
+                        }
+                    }
+
+                    const text = label.querySelector(".shuttle-label-text");
+                    const warning = label.querySelector(
+                        ".shuttle-accuracy-warning"
+                    );
+
+                    text.textContent = window.getShuttleDisplayName?.(id) || id;
+
+                    const accuracyStatus = vehicle.accuracyStatus;
+                    const isOnline = vehicle.gpsStatus === "ONLINE";
+
+                    label.classList.toggle(
+                        "shuttle-marker-accuracy-warning",
+                        isOnline && accuracyStatus === "WARNING"
+                    );
+
+                    label.classList.toggle(
+                        "shuttle-marker-accuracy-poor",
+                        isOnline && accuracyStatus === "POOR"
+                    );
+
+                    warning.style.display =
+                        isOnline &&
+                            (accuracyStatus === "WARNING" ||
+                                accuracyStatus === "POOR")
+                            ? "inline-block"
+                            : "none";
+
+                    warning.title =
+                        accuracyStatus === "POOR"
+                            ? `定位精度很差 ${formatAccuracy(vehicle.accuracy) || ""}`
+                            : `定位精度偏低 ${formatAccuracy(vehicle.accuracy) || ""}`;
+
+                    label.title =
+                        vehicle.gpsStatus !== "ONLINE"
+                            ? `${id}｜GPS ${vehicle.gpsStatus}`
+                            : `${id}｜GPS ${formatAccuracy(vehicle.accuracy) || "ONLINE"}`;
+                }
+
+                this.lastLayoutKey = "";
+                this.draw();
+            }
+
+            draw() {
+                if (!this.root || !this.svg || !this.getProjection()) {
+                    return;
+                }
+
+                const projection = this.getProjection();
+                const mapDiv = map.getDiv();
+                const width = mapDiv.clientWidth;
+                const height = mapDiv.clientHeight;
+
+                this.svg.setAttribute("width", width);
+                this.svg.setAttribute("height", height);
+                this.svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+                const entries = [];
+
+                for (const [id, vehicle] of this.vehicles) {
+                    const label = this.labels.get(id);
+
+                    if (!label) continue;
+
+                    const point = projection.fromLatLngToContainerPixel(
+                        new google.maps.LatLng(
+                            vehicle.position.lat,
+                            vehicle.position.lng
+                        )
+                    );
+
+                    if (!point) continue;
+
+                    // 畫面外的標籤不參與排列
+                    if (
+                        point.x < -100 ||
+                        point.y < -100 ||
+                        point.x > width + 100 ||
+                        point.y > height + 100
+                    ) {
+                        label.style.display = "none";
+                        continue;
+                    }
+
+                    label.style.display = "inline-flex";
+
+                    const rect = label.getBoundingClientRect();
+
+                    entries.push({
+                        id,
+                        label,
+                        x: point.x,
+                        y: point.y,
+                        w: Math.max(rect.width, 55),
+                        h: Math.max(rect.height, 18)
+                    });
+                }
+
+                // 依畫面位置排序，減少排版結果不穩定
+                entries.sort((a, b) =>
+                    a.y - b.y || a.x - b.x || a.id.localeCompare(b.id)
+                );
+
+                const placed = [];
+                const lines = [];
+
+                const gap = 4;
+                const edge = 5;
+
+                function overlapArea(a, b) {
+                    const overlapX = Math.max(
+                        0,
+                        Math.min(a.right + gap, b.right + gap) -
+                        Math.max(a.left - gap, b.left - gap)
+                    );
+
+                    const overlapY = Math.max(
+                        0,
+                        Math.min(a.bottom + gap, b.bottom + gap) -
+                        Math.max(a.top - gap, b.top - gap)
+                    );
+
+                    return overlapX * overlapY;
+                }
+
+                function makeRect(x, y, w, h) {
+                    return {
+                        left: x,
+                        top: y,
+                        right: x + w,
+                        bottom: y + h
+                    };
+                }
+
+                function intersects(a, b) {
+                    return (
+                        a.left < b.right &&
+                        a.right > b.left &&
+                        a.top < b.bottom &&
+                        a.bottom > b.top
+                    );
+                }
+
+                function segmentsCross(a, b, c, d) {
+                    const cross = (p, q, r) =>
+                        (q.x - p.x) * (r.y - p.y) -
+                        (q.y - p.y) * (r.x - p.x);
+
+                    const ab1 = cross(a, b, c);
+                    const ab2 = cross(a, b, d);
+                    const cd1 = cross(c, d, a);
+                    const cd2 = cross(c, d, b);
+
+                    return ab1 * ab2 < 0 && cd1 * cd2 < 0;
+                }
+
+                for (const entry of entries) {
+                    const { x, y, w, h } = entry;
+
+                    // 優先靠近原定位點；發生重疊時再往其他位置尋找
+                    const candidates = [
+                        [x + 12, y - h / 2],
+                        [x + 12, y - h - 7],
+                        [x + 12, y + 7],
+                        [x - w - 12, y - h / 2],
+                        [x - w - 12, y - h - 7],
+                        [x - w - 12, y + 7],
+                        [x - w / 2, y - h - 12],
+                        [x - w / 2, y + 12]
+                    ];
+
+                    // 密集區域增加候選位置，避免所有標籤擠在同一側
+                    for (let ring = 1; ring <= 8; ring++) {
+                        const offset = 12 + ring * 15;
+
+                        candidates.push(
+                            [x + offset, y - h / 2],
+                            [x - w - offset, y - h / 2],
+                            [x + 12, y - h / 2 - offset],
+                            [x + 12, y + offset],
+                            [x - w - 12, y - h / 2 - offset],
+                            [x - w - 12, y + offset],
+                            [x + offset, y - h - 7],
+                            [x - w - offset, y + 7]
+                        );
+                    }
+
+                    let best = null;
+                    let bestScore = Infinity;
+
+                    for (const [rawLeft, rawTop] of candidates) {
+                        const left = Math.max(
+                            edge,
+                            Math.min(rawLeft, width - w - edge)
+                        );
+
+                        const top = Math.max(
+                            edge,
+                            Math.min(rawTop, height - h - edge)
+                        );
+
+                        const rect = makeRect(left, top, w, h);
+
+                        let score = Math.hypot(
+                            left + w / 2 - x,
+                            top + h / 2 - y
+                        );
+
+                        for (const previous of placed) {
+                            if (intersects(rect, previous.rect)) {
+                                score += 100000 +
+                                    overlapArea(rect, previous.rect) * 100;
+                            }
+                        }
+
+                        const end = {
+                            x: Math.max(left, Math.min(x, left + w)),
+                            y: Math.max(top, Math.min(y, top + h))
+                        };
+
+                        for (const previousLine of lines) {
+                            if (
+                                segmentsCross(
+                                    { x, y },
+                                    end,
+                                    previousLine.start,
+                                    previousLine.end
+                                )
+                            ) {
+                                score += 500;
+                            }
+                        }
+
+                        if (score < bestScore) {
+                            bestScore = score;
+                            best = { left, top, rect, end };
+                        }
+
+                        // 已找到沒有重疊且距離近的位置，就不必繼續搜尋
+                        if (
+                            score < 100 &&
+                            best &&
+                            bestScore < 100
+                        ) {
+                            break;
+                        }
+                    }
+
+                    if (!best) continue;
+
+                    entry.label.style.left = `${best.left}px`;
+                    entry.label.style.top = `${best.top}px`;
+
+                    placed.push({
+                        id: entry.id,
+                        rect: best.rect
+                    });
+
+                    lines.push({
+                        start: { x, y },
+                        end: best.end
+                    });
+                }
+
+                // 先清除舊引線，再繪製本次排列結果
+                this.svg.replaceChildren();
+
+                for (const line of lines) {
+                    const distance = Math.hypot(
+                        line.end.x - line.start.x,
+                        line.end.y - line.start.y
+                    );
+
+                    if (distance < 8) continue;
+
+                    const element = document.createElementNS(
+                        "http://www.w3.org/2000/svg",
+                        "line"
+                    );
+
+                    element.setAttribute("x1", line.start.x);
+                    element.setAttribute("y1", line.start.y);
+                    element.setAttribute("x2", line.end.x);
+                    element.setAttribute("y2", line.end.y);
+                    element.setAttribute("class", "shuttle-leader-line");
+
+                    this.svg.appendChild(element);
+                }
+            }
+
+            onRemove() {
+                this.svg?.remove();
+                this.root?.remove();
+
+                this.root = null;
+                this.svg = null;
+
+                this.labels.clear();
+            }
+        }
+
+        const overlay = new ShuttleLabelOverlay();
+        overlay.setMap(map);
+
+        return overlay;
+    }
+
+
     // ========================================
     // Map Initialization
     // ========================================
@@ -131,6 +551,8 @@ window.ShuttleMonitorMap = (() => {
             }
         );
 
+        shuttleLabelOverlay = createShuttleLabelOverlay(shuttleMap);
+
         console.log(
             "[Shuttle Monitor Map] Google Maps 初始化完成"
         );
@@ -147,8 +569,8 @@ window.ShuttleMonitorMap = (() => {
             return;
         }
 
-        const currentIds =
-            new Set();
+        const currentIds = new Set();
+        const labelVehicles = [];
 
         locations.forEach(location => {
 
@@ -212,6 +634,17 @@ window.ShuttleMonitorMap = (() => {
                         location.gps_status
                 }
             );
+
+            labelVehicles.push({
+                personnelNumber,
+                position: {
+                    lat: location.latitude,
+                    lng: location.longitude
+                },
+                accuracy,
+                accuracyStatus,
+                gpsStatus: location.gps_status
+            });
         });
 
 
@@ -239,6 +672,10 @@ window.ShuttleMonitorMap = (() => {
                 }
             }
         );
+
+        if (shuttleLabelOverlay) {
+            shuttleLabelOverlay.updateVehicles(labelVehicles);
+        }
     }
 
 
@@ -302,108 +739,32 @@ window.ShuttleMonitorMap = (() => {
     // Create Shuttle Marker
     // ========================================
 
-    function createMarker(
-        personnelNumber,
-        position,
-        gpsInfo = {}
-    ) {
 
-        const markerElement =
-            document.createElement(
-                "div"
-            );
+    function createMarker(personnelNumber, position, gpsInfo = {}) {
+        const markerElement = document.createElement("div");
+        markerElement.className = "shuttle-marker";
 
-        markerElement.className =
-            "shuttle-marker";
-
-
-        // ========================================
-        // Vehicle Dot
-        // ========================================
-
-        const dot =
-            document.createElement(
-                "span"
-            );
-
-        dot.className =
-            "shuttle-dot";
-
-
-        // ========================================
-        // Vehicle Label
-        // ========================================
-
-        const label =
-            document.createElement(
-                "span"
-            );
-
-        label.className =
-            "shuttle-label";
-
-        label.textContent =
-            personnelNumber;
-
-
-        // ========================================
-        // Accuracy Warning
-        // ========================================
-
-        const warning =
-            document.createElement(
-                "span"
-            );
-
-        warning.className =
-            "shuttle-accuracy-warning";
-
-        warning.textContent =
-            "⚠";
-
-
-        // ========================================
-        // Append
-        // ========================================
-
-        markerElement.appendChild(
-            dot
+        markerElement.style.setProperty(
+            "--shuttle-marker-color",
+            shuttleMarkerColor
         );
 
-        markerElement.appendChild(
-            label
-        );
+        const dot = document.createElement("span");
+        dot.className = "shuttle-dot";
 
-        markerElement.appendChild(
-            warning
-        );
+        markerElement.appendChild(dot);
 
+        const marker = new google.maps.marker.AdvancedMarkerElement({
+            map: shuttleMap,
+            position,
+            content: markerElement,
+            title: personnelNumber,
+            anchorLeft: "-50%",
+            anchorTop: "-50%"
+        });
 
-        const marker =
-            new google.maps.marker.AdvancedMarkerElement({
-                map: shuttleMap,
-                position,
-                content: markerElement,
-                title: personnelNumber
-            });
-
-
-        // ========================================
-        // Initial Appearance
-        // ========================================
-
-        marker.__shuttleMarkerElement =
-            markerElement;
-
-        marker.__shuttleWarningElement =
-            warning;
-
-        marker.__shuttleDotElement =
-            dot;
-
-        marker.__shuttleLabelElement =
-            label;
-
+        marker.__shuttleMarkerElement = markerElement;
+        marker.__shuttleDotElement = dot;
 
         updateMarkerAppearance(
             marker,
@@ -411,149 +772,87 @@ window.ShuttleMonitorMap = (() => {
             gpsInfo
         );
 
-
         return marker;
     }
+
 
 
     // ========================================
     // Update Marker Appearance
     // ========================================
 
+
     function updateMarkerAppearance(
         marker,
         personnelNumber,
         gpsInfo = {}
     ) {
-
         const markerElement =
-            marker.__shuttleMarkerElement;
-
-        const warningElement =
-            marker.__shuttleWarningElement;
-
+            marker?.__shuttleMarkerElement;
 
         if (!markerElement) {
             return;
         }
 
+        // 使用目前函式實際收到的車輛編號，不引用未定義的 driver。
+        const displayName =
+            window.getShuttleDisplayName?.(personnelNumber) ||
+            personnelNumber ||
+            "未知車輛";
 
         const accuracyStatus =
-            gpsInfo.accuracyStatus ||
-            "UNKNOWN";
-
-        const accuracy =
-            gpsInfo.accuracy;
-
-        const gpsStatus =
-            gpsInfo.gpsStatus ||
-            "UNKNOWN";
+            gpsInfo.accuracyStatus || "UNKNOWN";
 
         const accuracyText =
-            formatAccuracy(
-                accuracy
-            );
+            formatAccuracy(gpsInfo.accuracy);
 
+        const gpsStatus =
+            gpsInfo.gpsStatus || "UNKNOWN";
 
-        // ========================================
-        // Reset
-        // ========================================
-
-        markerElement.classList.remove(
-            "shuttle-marker-accuracy-warning"
-        );
+        // 同步標記的標題，讓滑鼠移到車輛點位時能辨識車輛。
+        marker.title = displayName;
 
         markerElement.classList.remove(
+            "shuttle-marker-accuracy-warning",
             "shuttle-marker-accuracy-poor"
         );
 
-        if (warningElement) {
-
-            warningElement.style.display =
-                "none";
-
-            warningElement.title =
-                "";
-        }
-
-
-        // ========================================
-        // OFFLINE
-        //
-        // 離線車輛保留最後位置
-        // 但不判斷 GPS Accuracy
-        // ========================================
-
-        if (
-            gpsStatus !== "ONLINE"
-        ) {
-
+        if (gpsStatus !== "ONLINE") {
             marker.title =
-                `${personnelNumber}｜GPS ${gpsStatus}`;
+                `${displayName}｜GPS ${gpsStatus}`;
+
+            marker.__shuttleLastAccuracyStatus =
+                gpsStatus;
 
             return;
         }
-
-
-        // ========================================
-        // ONLINE
-        // ========================================
-
-        // ----------------------------------------
-        // Normal / Unknown
-        // ----------------------------------------
 
         if (
             accuracyStatus === "NORMAL" ||
             accuracyStatus === "UNKNOWN"
         ) {
+            marker.title = accuracyText
+                ? `${displayName}｜GPS ${accuracyText}`
+                : `${displayName}｜GPS ONLINE`;
 
-            marker.title =
-                accuracyText
-                    ? `${personnelNumber}｜GPS ${accuracyText}`
-                    : `${personnelNumber}｜GPS ONLINE`;
+            marker.__shuttleLastAccuracyStatus =
+                accuracyStatus;
 
             return;
         }
 
-
-        // ========================================
-        // Accuracy Warning
-        // 101m ~ 500m
-        // ========================================
-
-        if (
-            accuracyStatus === "WARNING"
-        ) {
-
+        if (accuracyStatus === "WARNING") {
             markerElement.classList.add(
                 "shuttle-marker-accuracy-warning"
             );
 
-
-            if (warningElement) {
-
-                warningElement.style.display =
-                    "inline-block";
-
-                warningElement.title =
-                    `定位精度偏低 ${accuracyText || ""}`;
-            }
-
-
             marker.title =
-                `${personnelNumber}｜⚠ 定位精度偏低 ${accuracyText || ""}`;
-
-
-            // ------------------------------------
-            // 只在狀態改變時寫入 Console
-            // ------------------------------------
+                `${displayName}｜⚠ 定位精度偏低 ${accuracyText || ""}`;
 
             if (
                 marker.__shuttleLastAccuracyStatus !==
                 "WARNING"
             ) {
-
                 console.warn(
                     "[Shuttle Monitor Map] 定位精度偏低:",
                     personnelNumber,
@@ -561,51 +860,24 @@ window.ShuttleMonitorMap = (() => {
                 );
             }
 
-
             marker.__shuttleLastAccuracyStatus =
                 "WARNING";
 
             return;
         }
 
-
-        // ========================================
-        // Accuracy Poor
-        // > 500m
-        // ========================================
-
-        if (
-            accuracyStatus === "POOR"
-        ) {
-
+        if (accuracyStatus === "POOR") {
             markerElement.classList.add(
                 "shuttle-marker-accuracy-poor"
             );
 
-
-            if (warningElement) {
-
-                warningElement.style.display =
-                    "inline-block";
-
-                warningElement.title =
-                    `定位精度很差 ${accuracyText || ""}`;
-            }
-
-
             marker.title =
-                `${personnelNumber}｜🔴 定位精度很差 ${accuracyText || ""}`;
-
-
-            // ------------------------------------
-            // 只在狀態改變時寫入 Console
-            // ------------------------------------
+                `${displayName}｜🔴 定位精度很差 ${accuracyText || ""}`;
 
             if (
                 marker.__shuttleLastAccuracyStatus !==
                 "POOR"
             ) {
-
                 console.warn(
                     "[Shuttle Monitor Map] 定位精度很差:",
                     personnelNumber,
@@ -613,23 +885,15 @@ window.ShuttleMonitorMap = (() => {
                 );
             }
 
-
             marker.__shuttleLastAccuracyStatus =
                 "POOR";
 
             return;
         }
 
-
-        // ========================================
-        // 記錄目前狀態
-        // ========================================
-
         marker.__shuttleLastAccuracyStatus =
             accuracyStatus;
-
     }
-
 
     // ========================================
     // Display Mode
@@ -945,12 +1209,11 @@ window.ShuttleMonitorMap = (() => {
 
         if (outbound) {
 
-            outboundPolyline =
-                drawRoute(
-                    outbound,
-                    "#f59e0b",
-                    "Outbound 去程"
-                );
+            outboundPolyline = drawRoute(
+                outbound,
+                shuttleRouteColor,
+                "Outbound 去程"
+            );
         }
 
 
@@ -960,12 +1223,11 @@ window.ShuttleMonitorMap = (() => {
 
         if (inbound) {
 
-            inboundPolyline =
-                drawRoute(
-                    inbound,
-                    "#60a5fa",
-                    "Inbound 回程"
-                );
+            inboundPolyline = drawRoute(
+                inbound,
+                shuttleRouteColor,
+                "Inbound 回程"
+            );
         }
 
 
@@ -984,20 +1246,18 @@ window.ShuttleMonitorMap = (() => {
     // ========================================
 
     function cleanup() {
-
-        shuttleMarkers.forEach(
-            marker => {
-
-                marker.map = null;
-
-            }
-        );
+        shuttleMarkers.forEach(marker => {
+            marker.map = null;
+        });
 
         shuttleMarkers.clear();
 
+        if (shuttleLabelOverlay) {
+            shuttleLabelOverlay.setMap(null);
+            shuttleLabelOverlay = null;
+        }
 
         cleanupRoute();
-
 
         shuttleMap = null;
     }
@@ -1047,25 +1307,17 @@ window.ShuttleMonitorMap = (() => {
     // ========================================
 
     return {
-
         init,
-
         renderLocations,
-
         setDisplayMode,
-
         getDisplayMode,
-
         setMapType,
-
         getMapType,
-
         setRoute,
-
+        setRouteConfig,
+        setMarkerColor,
         setGeometry,
-
         cleanup
-
     };
 
 })();
