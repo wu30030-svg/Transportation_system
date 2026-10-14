@@ -674,3 +674,51 @@ body {
         font-size: 18px;
     }
 }
+
+/* ========================================
+Manual GPS Retry
+======================================== */
+
+.gps-manual-card {
+    margin: 12px 0;
+    padding: 16px;
+    border-radius: 14px;
+    background: var(--card-bg, #17212b);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gps-resend-btn {
+    display: block;
+    width: 100%;
+    min-height: 50px;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 10px;
+    background: #176b45;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.gps-resend-btn {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.gps-resend-message {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #aebbc7;
+}
+
+.gps-resend-message.success {
+    color: #65d995;
+}
+
+.gps-resend-message.error {
+    color: #ff7777;
+}

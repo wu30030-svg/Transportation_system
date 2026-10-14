@@ -6,6 +6,7 @@
 window.ShuttleGPS = (() => {
 
     let gpsWatchId = null;
+    let isManualRequesting = false;
 
     let lastUpdateElement = null;
     let accuracyElement = null;
@@ -540,6 +541,115 @@ window.ShuttleGPS = (() => {
         }
     }
 
+    // ========================================================
+    // Manual GPS Request
+    // 手動要求取得一次新定位並沿用原本上傳方法
+    // ========================================================
+
+    function requestLocationNow() {
+
+        return new Promise((resolve, reject) => {
+
+            if (!navigator.geolocation) {
+                reject(new Error("瀏覽器不支援 GPS 定位"));
+                return;
+            }
+
+            if (isManualRequesting) {
+                reject(new Error("正在取得定位，請稍候"));
+                return;
+            }
+
+            isManualRequesting = true;
+
+            navigator.geolocation.getCurrentPosition(
+                async position => {
+
+                    try {
+
+                        if (isUploading) {
+                            throw new Error(
+                                "目前正在上傳定位，請稍後再試"
+                            );
+                        }
+
+                        const {
+                            latitude,
+                            longitude,
+                            accuracy,
+                            speed,
+                            heading
+                        } = position.coords;
+
+                        lastGpsAt = Date.now();
+                        isGpsAvailable = true;
+
+                        currentAccuracy =
+                            Number.isFinite(accuracy)
+                                ? accuracy
+                                : null;
+
+                        currentAccuracyStatus =
+                            getAccuracyStatus(currentAccuracy);
+
+                        updateAccuracyUI();
+
+                        notifyStatus("GPS_RECEIVED");
+
+                        const success =
+                            await sendLocationToBackend(
+                                latitude,
+                                longitude,
+                                accuracy,
+                                speed,
+                                heading
+                            );
+
+                        if (!success) {
+                            throw new Error(
+                                "定位上傳失敗，請檢查網路後重試"
+                            );
+                        }
+
+                        resolve(true);
+
+                    } catch (error) {
+
+                        reject(error);
+
+                    } finally {
+
+                        isManualRequesting = false;
+
+                    }
+                },
+
+                error => {
+
+                    isManualRequesting = false;
+
+                    handleGPSError(error);
+
+                    reject(
+                        new Error(
+                            error.code === 1
+                                ? "定位權限被拒絕，請允許手機使用定位"
+                                : error.code === 3
+                                    ? "取得定位逾時，請稍後重試"
+                                    : "目前無法取得 GPS，請確認手機定位功能"
+                        )
+                    );
+
+                },
+
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 15000
+                }
+            );
+        });
+    }
 
     // ========================================================
     // GPS Position
@@ -713,25 +823,28 @@ window.ShuttleGPS = (() => {
 
     function start() {
 
+        // Android App 使用原生定位服務，不啟動瀏覽器 GPS。
+        if (
+            typeof window.AndroidShuttleBridge !== "undefined"
+        ) {
+            console.log(
+                "[GPS] Android 原生 App，略過網頁 GPS"
+            );
+            return;
+        }
+
         if (!navigator.geolocation) {
 
             console.error(
                 "[GPS] 瀏覽器不支援 Geolocation"
             );
 
+            isGpsAvailable = false;
 
-            isGpsAvailable =
-                false;
-
-
-            notifyStatus(
-                "GPS_UNAVAILABLE"
-            );
-
+            notifyStatus("GPS_UNAVAILABLE");
 
             return;
         }
-
 
         if (gpsWatchId !== null) {
 
@@ -742,34 +855,20 @@ window.ShuttleGPS = (() => {
             return;
         }
 
+        console.log("[GPS] 開始取得定位");
 
-        console.log(
-            "[GPS] 開始取得定位"
+        notifyStatus("STARTING");
+
+        gpsWatchId = navigator.geolocation.watchPosition(
+            updateGPS,
+            handleGPSError,
+            {
+                enableHighAccuracy: true,
+                maximumAge: 5000,
+                timeout: 10000
+            }
         );
-
-
-        notifyStatus(
-            "STARTING"
-        );
-
-
-        gpsWatchId =
-            navigator.geolocation.watchPosition(
-                updateGPS,
-                handleGPSError,
-                {
-                    enableHighAccuracy:
-                        true,
-
-                    maximumAge:
-                        5000,
-
-                    timeout:
-                        10000
-                }
-            );
     }
-
 
     // ========================================================
     // Restart
@@ -846,20 +945,21 @@ window.ShuttleGPS = (() => {
 
     function handleVisibilityChange() {
 
+        // Android App 使用原生 GPS，不得啟動網頁 GPS。
         if (
-            document.visibilityState ===
-            "visible"
+            typeof window.AndroidShuttleBridge !== "undefined"
         ) {
+            return;
+        }
 
-            console.log(
-                "[GPS] 頁面重新回到前景"
-            );
-
-
+        // 一般瀏覽器回到前景時，才重新啟動網頁 GPS。
+        if (
+            document.visibilityState === "visible"
+        ) {
+            console.log("[GPS] 頁面重新回到前景");
             restart();
         }
     }
-
 
     document.addEventListener(
         "visibilitychange",
@@ -872,33 +972,20 @@ window.ShuttleGPS = (() => {
     // ========================================================
 
     return {
-
         init,
-
         start,
-
         stop,
-
         restart,
-
+        requestLocationNow,
 
         getState: () => ({
-
             gpsWatchId,
-
             isGpsAvailable,
-
             lastGpsAt,
-
             lastUploadSuccessAt,
-
             isUploading,
-
-            accuracy:
-                currentAccuracy,
-
-            accuracyStatus:
-                currentAccuracyStatus
+            accuracy: currentAccuracy,
+            accuracyStatus: currentAccuracyStatus
         })
     };
 

@@ -1,5 +1,11 @@
 console.log("[Shuttle Driver] Driver UI 啟動");
 
+console.log(
+    "[Shuttle Driver] 定位執行環境",
+    typeof window.AndroidShuttleBridge !== "undefined"
+        ? "Android 原生 GPS"
+        : "瀏覽器 GPS"
+);
 
 /**
  * ========================================
@@ -585,22 +591,118 @@ function setSendingStatus(
     }
 }
 
+// ========================================================
+// Manual GPS Retry Button
+// 3 秒冷卻，避免駕駛連續點擊
+// ========================================================
+
+(function initManualGPSButton() {
+
+    const button =
+        document.getElementById("gps-resend-btn");
+
+    const message =
+        document.getElementById("gps-resend-message");
+
+    if (!button || !message) {
+        return;
+    }
+
+    let coolingDown = false;
+    let requestInProgress = false;
+
+    button.addEventListener("click", async () => {
+
+        if (coolingDown || requestInProgress) {
+            return;
+        }
+
+        coolingDown = true;
+        requestInProgress = true;
+        button.disabled = true;
+
+        message.className = "gps-resend-message";
+        message.textContent = "正在重新取得 GPS 並傳送定位…";
+
+        // 3 秒後允許再次點擊；
+        // 若定位請求仍在執行，仍會由 requestInProgress 阻擋。
+        setTimeout(() => {
+            coolingDown = false;
+
+            if (!requestInProgress) {
+                button.disabled = false;
+                button.textContent = "↻ 重新發送定位";
+            }
+        }, 3000);
+
+        button.textContent = "正在取得定位…";
+
+
+        try {
+            if (isNativeShuttleApp) {
+                const token = getAuthToken();
+
+                if (!token) {
+                    throw new Error("登入憑證不存在，請重新登入");
+                }
+
+                window.AndroidShuttleBridge.requestLocationNow(token);
+
+                message.className = "gps-resend-message";
+                message.textContent =
+                    "已要求 Android 重新取得定位，等待上傳結果。";
+
+            } else {
+                const success = await ShuttleGPS.requestLocationNow();
+
+                if (success !== true) {
+                    throw new Error("定位上傳失敗，請稍後重試");
+                }
+
+                message.className = "gps-resend-message success";
+                message.textContent =
+                    `定位已成功送出（${new Date().toLocaleTimeString("zh-TW", {
+                        hour12: false
+                    })}）`;
+            }
+
+        } catch (error) {
+            console.warn(
+                "[Shuttle Driver] 手動重新發送定位失敗:",
+                error
+            );
+
+            message.className = "gps-resend-message error";
+            message.textContent =
+                error.message || "定位傳送失敗，請稍後再試";
+
+        } finally {
+            requestInProgress = false;
+
+            if (!coolingDown) {
+                button.disabled = false;
+                button.textContent = "↻ 重新發送定位";
+            }
+        }
+
+    });
+
+})();
 
 // ========================================================
 // GPS Init
 // ========================================================
 
-ShuttleGPS.init({
+const isNativeShuttleApp =
+    typeof window.AndroidShuttleBridge !== "undefined";
 
-    lastUpdateElement:
+if (!isNativeShuttleApp) {
+    ShuttleGPS.init({
         lastUpdateElement,
-
-    accuracyElement:
         accuracyElement,
-
-    statusHandler:
-        updateDriverGPSStatus
-});
+        statusHandler: updateDriverGPSStatus
+    });
+}
 
 // ========================================
 // API
@@ -1072,7 +1174,11 @@ async function handleShuttleWebSocketMessage(data) {
             "[Shuttle WebSocket] 收到強制登出"
         );
 
-        ShuttleGPS.stop();
+        if (isNativeShuttleApp) {
+            window.AndroidShuttleBridge.stopTracking();
+        } else {
+            ShuttleGPS.stop();
+        }
 
         if (
             shuttleWebSocket
@@ -1877,10 +1983,17 @@ function closeCallWindow() {
 // Start
 // ========================================
 
-ShuttleGPS.start();
+if (isNativeShuttleApp) {
+    const token = getAuthToken();
+
+    if (token) {
+        window.AndroidShuttleBridge.startTracking(token);
+    }
+} else {
+    ShuttleGPS.start();
+}
 
 connectShuttleWebSocket();
-
 
 // ========================================
 // Logout
@@ -1907,7 +2020,11 @@ if (logoutButton) {
             // Stop GPS
             // ----------------------------------------
 
-            ShuttleGPS.stop();
+            if (isNativeShuttleApp) {
+                window.AndroidShuttleBridge.stopTracking();
+            } else {
+                ShuttleGPS.stop();
+            }
 
             // ----------------------------------------
             // Close Call
