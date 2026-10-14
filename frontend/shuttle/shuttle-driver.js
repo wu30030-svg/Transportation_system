@@ -510,6 +510,67 @@ function updateDriverGPSStatus(data) {
     }
 }
 
+/**
+ * Android 原生 GPS 狀態接收入口
+ * 由 MainActivity 透過 WebView.evaluateJavascript 呼叫
+ */
+window.handleNativeShuttleGPSStatus = function (data) {
+    if (!data || typeof data.status !== "string") {
+        console.warn("[Native GPS] 收到無效狀態", data);
+        return;
+    }
+
+    console.log("[Native GPS] 狀態更新", data);
+
+    // 更新現有 GPS 狀態卡片
+    updateDriverGPSStatus(data);
+
+    // 更新精度
+    if (
+        typeof data.accuracy === "number" &&
+        accuracyElement
+    ) {
+        accuracyElement.textContent =
+            `${data.accuracy.toFixed(1)} m`;
+    }
+
+    // 更新最近一次定位時間
+    if (
+        data.status === "ONLINE" &&
+        lastUpdateElement
+    ) {
+        lastUpdateElement.textContent =
+            new Date(
+                data.lastUploadSuccessAt || Date.now()
+            ).toLocaleTimeString("zh-TW", {
+                hour12: false
+            });
+    }
+
+    // 更新手動重新發送定位按鈕的結果
+    const message =
+        document.getElementById("gps-resend-message");
+
+    if (message && data.isManualRequest === true) {
+        if (data.status === "ONLINE") {
+            message.className =
+                "gps-resend-message success";
+
+            message.textContent =
+                "定位已成功送出。";
+        } else if (
+            data.status === "UPLOAD_ERROR" ||
+            data.status === "GPS_ERROR" ||
+            data.status === "GPS_UNAVAILABLE"
+        ) {
+            message.className =
+                "gps-resend-message error";
+
+            message.textContent =
+                data.message || "定位傳送失敗，請稍後再試。";
+        }
+    }
+};
 
 // ========================================================
 // GPS Status Card
