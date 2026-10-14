@@ -571,6 +571,10 @@ window.handleNativeShuttleGPSStatus = function (data) {
         }
     }
 };
+console.log(
+    "[Native GPS] 回呼定義完成：",
+    typeof window.handleNativeShuttleGPSStatus
+);
 
 // ========================================================
 // GPS Status Card
@@ -2141,3 +2145,7 @@ if (logoutButton) {
         }
     );
 }
+console.log(
+    "[Native GPS] Driver JS 執行完成；回呼型別：",
+    typeof window.handleNativeShuttleGPSStatus
+);
