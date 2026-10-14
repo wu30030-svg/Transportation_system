@@ -66,31 +66,31 @@ window.getShuttleDisplayName = function (personnelNumber) {
     const n = Number(match[1]);
 
     if (n >= 1 && n <= 10) {
-        return `成功線 ${n}`;
+        return `成 ${n}`;
     }
 
     if (n >= 11 && n <= 60) {
-        return `新烏日線 ${n - 10}`;
+        return `烏 ${n - 10}`;
     }
 
     if (n >= 61 && n <= 110) {
-        return `水湳線 ${n - 60}`;
+        return `湳 ${n - 60}`;
     }
 
     if (n >= 111 && n <= 125) {
-        return `嶺東科大線 ${n - 110}`;
+        return `副 ${n - 110}`;
     }
 
     if (n >= 126 && n <= 135) {
-        return `營內1號門接駁線 ${n - 125}`;
+        return `營 ${n - 125}`;
     }
 
     if (n >= 136 && n <= 141) {
-        return `復康巴士 ${n - 135}`;
+        return `復 ${n - 135}`;
     }
 
     if (n >= 142 && n <= 152) {
-        return `待命車輛 ${n - 141}`;
+        return `備 ${n - 141}`;
     }
 
     return personnelNumber;
