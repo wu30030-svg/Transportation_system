@@ -941,7 +941,6 @@ function connectShuttleWebSocket() {
     );
 }
 
-
 // ========================================
 // WebSocket Message Handler
 // ========================================
@@ -1357,63 +1356,8 @@ async function handleShuttleWebRTCOffer(data) {
 // ========================================
 
 function handleDriverRemoteStream(stream) {
-
-    console.log(
-        "[WebRTC] Driver 收到 Monitor Remote Audio Stream"
-    );
-
-
-    let audioElement =
-        document.getElementById(
-            "shuttle-remote-audio"
-        );
-
-
-    if (!audioElement) {
-
-        audioElement =
-            document.createElement(
-                "audio"
-            );
-
-        audioElement.id =
-            "shuttle-remote-audio";
-
-        audioElement.autoplay =
-            true;
-
-        audioElement.playsInline =
-            true;
-
-        audioElement.style.display =
-            "none";
-
-        document.body.appendChild(
-            audioElement
-        );
-    }
-
-
-    audioElement.srcObject =
-        stream;
-
-
-    audioElement.play()
-        .then(() => {
-
-            console.log(
-                "[WebRTC] Driver Remote Audio 開始播放"
-            );
-
-        })
-        .catch(error => {
-
-            console.warn(
-                "[WebRTC] Driver Remote Audio 播放失敗:",
-                error
-            );
-
-        });
+    console.log("[WebRTC] Driver 收到 Monitor Remote Audio Stream");
+    ShuttleCallAudio.playRemoteStream(stream);
 }
 
 // ========================================
@@ -2016,6 +1960,7 @@ function closeCallWindow() {
     // ========================================
 
     ShuttleWebRTC.cleanup();
+    ShuttleCallAudio.stopRemoteStream();
 
     // ========================================
     // Call State Cleanup

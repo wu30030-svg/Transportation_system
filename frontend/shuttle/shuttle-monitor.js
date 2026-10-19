@@ -422,21 +422,7 @@ async function handleShuttleWebRTCAnswer(data) {
 
 function handleShuttleRemoteStream(remoteStream) {
     console.log("[WebRTC] Monitor 收到 Remote Stream");
-    let audioElement = document.getElementById("shuttle-remote-audio");
-    if (!audioElement) {
-        audioElement = document.createElement("audio");
-        audioElement.id = "shuttle-remote-audio";
-        audioElement.autoplay = true;
-        audioElement.playsInline = true;
-        document.body.appendChild(audioElement);
-        console.log("[WebRTC] Monitor Remote Audio Element 已建立");
-    }
-    audioElement.srcObject = remoteStream;
-    audioElement.play().then(() => {
-        console.log("[WebRTC] Monitor Remote Audio 播放成功");
-    }).catch(error => {
-        console.warn("[WebRTC] Monitor Remote Audio 播放失敗:", error);
-    });
+    ShuttleCallAudio.playRemoteStream(remoteStream);
 }
 
 // ========================================
@@ -744,6 +730,7 @@ function hangupActiveCall() {
 function closeCallWindow() {
     ShuttleCall.clearCall();
     ShuttleWebRTC.cleanup();
+    ShuttleCallAudio.stopRemoteStream();
     const callWindow = document.getElementById("shuttle-call-window");
     if (callWindow) {
         callWindow.classList.add("hidden");

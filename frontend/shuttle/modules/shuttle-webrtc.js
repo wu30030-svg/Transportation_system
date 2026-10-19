@@ -278,27 +278,6 @@ window.ShuttleWebRTC = (() => {
             );
         }
 
-
-        const audioElement =
-            document.getElementById(
-                "shuttle-remote-audio"
-            );
-
-        if (audioElement) {
-
-            audioElement.pause();
-
-            audioElement.srcObject =
-                null;
-
-            audioElement.remove();
-
-            console.log(
-                "[WebRTC] Remote Audio Element 已移除"
-            );
-        }
-
-
         pendingIceCandidates = [];
 
         console.log(
