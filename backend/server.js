@@ -58,13 +58,22 @@ const onlineUsers = new Map();
 
 const activeCalls = new Map();
 
-
 function getOnlineUsersFor(recipientUser) {
-    const isShuttleWorkspace =
-        typeof recipientUser?.access_context === "string" &&
-        /^營區開放_[A-E]路線$/.test(
-            recipientUser.access_context
-        );
+    const recipientContext = recipientUser?.access_context;
+
+    const isShuttleMonitor =
+        Number(recipientUser?.role_id) === 6;
+
+    // 接駁車監控帳號沒有有效工作區時，拒絕回傳名單。
+    if (
+        isShuttleMonitor &&
+        (
+            typeof recipientContext !== "string" ||
+            !/^營區開放_[A-E]路線$/.test(recipientContext)
+        )
+    ) {
+        return [];
+    }
 
     const users = [];
 
@@ -78,10 +87,11 @@ function getOnlineUsersFor(recipientUser) {
 
         const user = userSocket.user;
 
-        // 接駁車監控端只能取得同一路線的線上名單。
+        // 有工作區的使用者只能取得同工作區的在線名單。
         if (
-            isShuttleWorkspace &&
-            user.access_context !== recipientUser.access_context
+            typeof recipientContext === "string" &&
+            recipientContext.length > 0 &&
+            user.access_context !== recipientContext
         ) {
             continue;
         }
@@ -99,7 +109,6 @@ function getOnlineUsersFor(recipientUser) {
 
     return users;
 }
-
 
 // ========================================
 // Broadcast Online Users
@@ -188,6 +197,8 @@ app.post("/api/auth/force-logout/:username", authenticateToken, async (req, res)
             Boolean(targetSocket)
         );
 
+        broadcastOnlineUsers();
+
         return res.json({
             success: true,
             username: result.username,
@@ -202,6 +213,8 @@ app.post("/api/auth/force-logout/:username", authenticateToken, async (req, res)
             "[Force Logout] Error:",
             error
         );
+
+        broadcastOnlineUsers();
 
         return res.status(
             error.statusCode || 500

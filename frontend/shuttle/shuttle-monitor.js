@@ -275,6 +275,27 @@ async function handleShuttleWebSocketMessage(data) {
 
     if (data.type === "call:incoming") {
         console.log("[Shuttle Communication] 收到來電:", data);
+
+        const currentCallState = ShuttleCall.getState();
+
+        // 已有通話時，不覆蓋目前通話
+        if (currentCallState.activeCallState) {
+            console.warn("[Shuttle Communication] 目前已有通話，忽略新來電");
+            return;
+        }
+
+        if (!data.call_id) {
+            console.error("[Shuttle Communication] 來電缺少 call_id");
+            return;
+        }
+
+        ShuttleCall.setCall({
+            callId: data.call_id,
+            target: data.caller || {},
+            state: "INCOMING"
+        });
+
+        updateCallWindow();
         return;
     }
 
@@ -333,7 +354,10 @@ async function handleShuttleWebSocketMessage(data) {
     // ========================================
     // WebRTC Answer
     // ========================================
-
+    if (data.type === "call:webrtc-offer") {
+        await handleShuttleWebRTCOffer(data);
+        return;
+    }
     if (data.type === "call:webrtc-answer") {
         handleShuttleWebRTCAnswer(data);
         return;
@@ -414,6 +438,36 @@ async function handleShuttleWebRTCAnswer(data) {
         return;
     }
     await ShuttleWebRTC.handleAnswer(answer);
+}
+
+async function handleShuttleWebRTCOffer(data) {
+    const callId = data.call_id;
+    const offer = data.offer;
+
+    if (!callId || !offer) {
+        console.warn("[WebRTC] Offer 缺少 call_id 或 offer");
+        return;
+    }
+
+    const callState = ShuttleCall.getState();
+
+    if (callId !== callState.activeCallId) {
+        console.warn("[WebRTC] Offer 不屬於目前通話:", callId);
+        return;
+    }
+
+    try {
+        await ShuttleWebRTC.handleOffer({
+            webSocket: ShuttleMonitorWebSocket.getSocket(),
+            callId,
+            offer,
+            onRemoteStream: handleShuttleRemoteStream,
+            role: "monitor"
+        });
+    } catch (error) {
+        console.error("[WebRTC] 監控端處理 Offer 失敗:", error);
+        closeCallWindow();
+    }
 }
 
 // ========================================
@@ -544,7 +598,15 @@ function renderVehiclePanel() {
 // ========================================
 
 function getOnlineDrivers() {
-    return shuttleOnlineUsers.filter(user => Number(user.role_id) === 4 && user.user_id && user.access_context);
+    if (!shuttleMonitorRoute) {
+        return [];
+    }
+
+    return shuttleOnlineUsers.filter(user =>
+        Number(user.role_id) === 4 &&
+        user.user_id &&
+        user.access_context === shuttleMonitorRoute
+    );
 }
 
 // ========================================
@@ -614,103 +676,193 @@ function renderCommunicationPanel() {
 // Call Window
 // ========================================
 
+
 function createCallWindow() {
     if (document.getElementById("shuttle-call-window")) {
         return;
     }
+
     const callWindow = document.createElement("div");
     callWindow.id = "shuttle-call-window";
     callWindow.className = "shuttle-call-window hidden";
+
     callWindow.innerHTML = `
         <div class="shuttle-call-card">
-            <div class="shuttle-call-icon">
-                📞
+            <div class="shuttle-call-icon">📞</div>
+
+            <div id="shuttle-call-state" class="shuttle-call-state">
+                通話狀態
             </div>
-            <div
-                id="shuttle-call-state"
-                class="shuttle-call-state"
-            >
-                呼叫中
+
+            <div id="shuttle-call-name" class="shuttle-call-name">--</div>
+            <div id="shuttle-call-number" class="shuttle-call-number">--</div>
+            <div id="shuttle-call-route" class="shuttle-call-route">--</div>
+            <div id="shuttle-call-status" class="shuttle-call-status">等待操作</div>
+            <div id="shuttle-call-timer" class="shuttle-call-timer">00:00</div>
+
+            <div class="shuttle-call-actions">
+                <button id="shuttle-call-accept" type="button">
+                    接聽
+                </button>
+                <button id="shuttle-call-reject" type="button">
+                    拒絕
+                </button>
+                <button
+                    id="shuttle-call-hangup"
+                    type="button"
+                    class="shuttle-call-hangup">
+                    掛斷
+                </button>
             </div>
-            <div
-                id="shuttle-call-name"
-                class="shuttle-call-name"
-            >
-                --
-            </div>
-            <div
-                id="shuttle-call-number"
-                class="shuttle-call-number"
-            >
-                --
-            </div>
-            <div
-                id="shuttle-call-route"
-                class="shuttle-call-route"
-            >
-                --
-            </div>
-            <div
-                id="shuttle-call-status"
-                class="shuttle-call-status"
-            >
-                等待對方接聽...
-            </div>
-            <div
-                id="shuttle-call-timer"
-                class="shuttle-call-timer"
-            >
-                00:00
-            </div>
-            <button
-                id="shuttle-call-hangup"
-                type="button"
-                class="shuttle-call-hangup"
-            >
-                掛斷
-            </button>
         </div>
     `;
+
     document.body.appendChild(callWindow);
-    const hangupButton = document.getElementById("shuttle-call-hangup");
-    if (hangupButton) {
-        hangupButton.addEventListener("click", hangupActiveCall);
-    }
+
+    document.getElementById("shuttle-call-accept")
+        ?.addEventListener("click", acceptIncomingCall);
+
+    document.getElementById("shuttle-call-reject")
+        ?.addEventListener("click", rejectIncomingCall);
+
+    document.getElementById("shuttle-call-hangup")
+        ?.addEventListener("click", hangupActiveCall);
 }
+
+
 function updateCallWindow() {
     createCallWindow();
+
     const callState = ShuttleCall.getState();
     const callWindow = document.getElementById("shuttle-call-window");
+    if (!callWindow) return;
+
     const stateElement = document.getElementById("shuttle-call-state");
     const nameElement = document.getElementById("shuttle-call-name");
     const numberElement = document.getElementById("shuttle-call-number");
     const routeElement = document.getElementById("shuttle-call-route");
     const statusElement = document.getElementById("shuttle-call-status");
     const timerElement = document.getElementById("shuttle-call-timer");
-    if (!callWindow) {
-        return;
-    }
+
+    const acceptButton = document.getElementById("shuttle-call-accept");
+    const rejectButton = document.getElementById("shuttle-call-reject");
+    const hangupButton = document.getElementById("shuttle-call-hangup");
+
     const target = callState.activeCallTarget || {};
+
     if (nameElement) {
-        nameElement.textContent = target.personnel_name || target.username || "未知駕駛";
+        nameElement.textContent =
+            target.personnel_name || target.username || "未知使用者";
     }
+
     if (numberElement) {
         numberElement.textContent = target.personnel_number || "--";
     }
+
     if (routeElement) {
         routeElement.textContent = target.access_context || "未知路線";
     }
-    if (callState.activeCallState === "CALLING") {
-        if (stateElement) { stateElement.textContent = "呼叫中"; }
-        if (statusElement) { statusElement.textContent = "等待對方接聽..."; }
-        if (timerElement) { timerElement.textContent = "00:00"; }
+
+    const state = callState.activeCallState;
+    const isIncoming = state === "INCOMING";
+    const isCalling = state === "CALLING";
+    const isConnected = state === "CONNECTED";
+
+    if (stateElement) {
+        stateElement.textContent = isIncoming
+            ? "駕駛來電"
+            : isCalling
+                ? "呼叫中"
+                : isConnected
+                    ? "通話中"
+                    : "通話狀態";
     }
-    if (callState.activeCallState === "CONNECTED") {
-        if (stateElement) { stateElement.textContent = "通話中"; }
-        if (statusElement) { statusElement.textContent = "語音通話已建立"; }
+
+    if (statusElement) {
+        statusElement.textContent = isIncoming
+            ? "駕駛正在呼叫，請選擇接聽或拒絕"
+            : isCalling
+                ? "等待對方接聽..."
+                : isConnected
+                    ? "語音通話進行中"
+                    : "";
     }
+
+    if (timerElement && (isIncoming || isCalling)) {
+        timerElement.textContent = "00:00";
+    }
+
+    if (acceptButton) {
+        acceptButton.hidden = !isIncoming;
+    }
+
+    if (rejectButton) {
+        rejectButton.hidden = !isIncoming;
+    }
+
+    if (hangupButton) {
+        hangupButton.hidden = !(isCalling || isConnected);
+    }
+
     callWindow.classList.remove("hidden");
 }
+
+function acceptIncomingCall() {
+    const callState = ShuttleCall.getState();
+
+    if (
+        callState.activeCallState !== "INCOMING" ||
+        !callState.activeCallId
+    ) {
+        console.warn("[Call] 目前沒有可接聽的來電");
+        return;
+    }
+
+    if (!ShuttleMonitorWebSocket.isConnected()) {
+        console.warn("[Call] WebSocket 尚未連線");
+        return;
+    }
+
+    ShuttleMonitorWebSocket.send({
+        type: "call:accept",
+        call_id: callState.activeCallId
+    });
+
+    // 駕駛端會在接受後發送 WebRTC Offer；
+    // 監控端透過 call:webrtc-offer 處理語音連線。
+    ShuttleCall.setState("CONNECTED");
+    ShuttleCall.setStarted();
+
+    updateCallWindow();
+    ShuttleCall.startTimer();
+
+    console.log("[Call] 已送出接聽要求:", callState.activeCallId);
+}
+
+function rejectIncomingCall() {
+    const callState = ShuttleCall.getState();
+
+    if (
+        callState.activeCallState !== "INCOMING" ||
+        !callState.activeCallId
+    ) {
+        return;
+    }
+
+    if (!ShuttleMonitorWebSocket.isConnected()) {
+        console.warn("[Call] WebSocket 尚未連線，無法拒絕來電");
+        return;
+    }
+
+    ShuttleMonitorWebSocket.send({
+        type: "call:reject",
+        call_id: callState.activeCallId
+    });
+
+    closeCallWindow();
+    console.log("[Call] 已拒絕來電:", callState.activeCallId);
+}
+
 function hangupActiveCall() {
     const callState = ShuttleCall.getState();
     if (!callState.activeCallId) {

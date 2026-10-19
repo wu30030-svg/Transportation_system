@@ -95,10 +95,11 @@ window.ShuttleWebRTC = (() => {
     async function startAsCaller({
         webSocket,
         callId,
-        onRemoteStream
+        onRemoteStream,
+        role = "monitor"
     }) {
         const pc = createPeerConnection({
-            role: "monitor",
+            role,
             webSocket,
             callId,
             onRemoteStream
@@ -129,10 +130,11 @@ window.ShuttleWebRTC = (() => {
         webSocket,
         callId,
         offer,
-        onRemoteStream
+        onRemoteStream,
+        role = "driver"
     }) {
         const pc = createPeerConnection({
-            role: "driver",
+            role,
             webSocket,
             callId,
             onRemoteStream

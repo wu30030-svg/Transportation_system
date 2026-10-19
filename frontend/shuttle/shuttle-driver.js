@@ -7,6 +7,10 @@ console.log(
         : "瀏覽器 GPS"
 );
 
+let shuttleDriverUser = null;
+let shuttleDriverRoute = null;
+let shuttleOnlineUsers = [];
+
 /**
  * ========================================
  * Driver Identity
@@ -71,6 +75,8 @@ async function loadShuttleDriverIdentity() {
 
         const accessContext =
             user.access_context || "";
+        shuttleDriverUser = user;
+        shuttleDriverRoute = accessContext;
 
         if (!personnelNumber) {
             throw new Error(
@@ -159,7 +165,6 @@ async function loadShuttleDriverIdentity() {
 
 // 載入身分不應阻止 GPS 啟動
 loadShuttleDriverIdentity();
-
 
 // ========================================
 // DOM
@@ -946,201 +951,205 @@ function connectShuttleWebSocket() {
 // ========================================
 
 async function handleShuttleWebSocketMessage(data) {
-
-    // ========================================
     // Authentication Success
-    // ========================================
-
-    if (
-        data.type ===
-        "auth:success"
-    ) {
-
+    if (data.type === "auth:success") {
         console.log(
             "[Shuttle WebSocket] Authentication success:",
             data.user
         );
 
-
         if (
             shuttleWebSocket &&
-            shuttleWebSocket.readyState ===
-            WebSocket.OPEN
+            shuttleWebSocket.readyState === WebSocket.OPEN
         ) {
-
-            shuttleWebSocket.send(
-                JSON.stringify({
-                    type:
-                        "online:list"
-                })
-            );
+            shuttleWebSocket.send(JSON.stringify({
+                type: "online:list"
+            }));
         }
-
 
         return;
     }
 
-
-    // ========================================
     // Online User List
-    // ========================================
-
-    if (
-        data.type ===
-        "online:list"
-    ) {
+    if (data.type === "online:list") {
+        shuttleOnlineUsers = Array.isArray(data.users)
+            ? data.users
+            : [];
 
         console.log(
             "[Shuttle WebSocket] Online users:",
-            data.users
+            shuttleOnlineUsers
         );
-
 
         return;
     }
 
+    // Outgoing Call Started
+    if (data.type === "call:started") {
+        const callState = ShuttleCall.getState();
 
-    // ========================================
-    // Incoming Call
-    // ========================================
+        if (callState.activeCallState !== "CALLING") {
+            console.warn("[Call] 目前沒有等待中的主動呼叫");
+            return;
+        }
 
-    if (
-        data.type ===
-        "call:incoming"
-    ) {
-
-        console.log(
-            "[Shuttle Communication] 收到來電:",
-            data
-        );
-
+        if (!data.call_id) {
+            console.error("[Call] 伺服器沒有回傳 call_id");
+            closeCallWindow();
+            return;
+        }
 
         ShuttleCall.setCall({
-            callId:
-                data.call_id,
-
-            target:
-                data.caller || {},
-
-            state:
-                "INCOMING"
+            callId: data.call_id,
+            target: callState.activeCallTarget,
+            state: "CALLING"
         });
 
         updateCallWindow();
-
         return;
     }
 
-    // ========================================
+    // Incoming Call
+    if (data.type === "call:incoming") {
+        console.log("[Call] 收到來電:", data);
+
+        // 已有通話時不覆蓋目前通話
+        if (ShuttleCall.getState().activeCallState) {
+            console.warn("[Call] 已有通話，忽略新的來電");
+            return;
+        }
+
+        ShuttleCall.setCall({
+            callId: data.call_id,
+            target: data.caller || {},
+            state: "INCOMING"
+        });
+
+        updateCallWindow();
+        return;
+    }
+
     // WebRTC Offer
-    // ========================================
+    if (data.type === "call:webrtc-offer") {
+        await handleShuttleWebRTCOffer(data);
+        return;
+    }
 
-    if (
-        data.type ===
-        "call:webrtc-offer"
-    ) {
+    // WebRTC ICE
+    if (data.type === "call:webrtc-ice") {
+        const callState = ShuttleCall.getState();
 
-        handleShuttleWebRTCOffer(
-            data
-        );
+        if (data.call_id !== callState.activeCallId) {
+            console.warn("[WebRTC] ICE 不屬於目前通話:", data.call_id);
+            return;
+        }
+
+        if (!data.candidate) {
+            console.warn("[WebRTC] ICE Candidate 資料不存在");
+            return;
+        }
+
+        try {
+            await ShuttleWebRTC.handleIceCandidate(data.candidate);
+        } catch (error) {
+            console.error("[WebRTC] 處理 ICE 失敗:", error);
+        }
 
         return;
     }
 
-    if (
-        data.type ===
-        "call:webrtc-ice"
-    ) {
-
-        console.log(
-            "[WebRTC] Driver 收到 ICE Candidate:",
-            data.call_id
-        );
-
-        const callState =
-            ShuttleCall.getState();
-
-        if (
-            data.call_id !==
-            callState.activeCallId
-        ) {
-
-            console.warn(
-                "[WebRTC] ICE 不屬於目前通話:",
-                data.call_id
-            );
-
-            return;
-        }
-
-        if (
-            !data.candidate
-        ) {
-
-            console.warn(
-                "[WebRTC] ICE Candidate 資料不存在"
-            );
-
-            return;
-        }
-
-        await ShuttleWebRTC.handleIceCandidate(
-            data.candidate
-        );
-
-        return;
-    }
-
-    // ========================================
     // Call Accepted
-    // ========================================
+    if (data.type === "call:accepted") {
+        const callState = ShuttleCall.getState();
 
-    if (
-        data.type ===
-        "call:accepted"
-    ) {
-
-        console.log(
-            "[Shuttle Communication] 通話已接通:",
-            data
-        );
-
-
-        /*
-         * 駕駛端通常不會收到自己的
-         * call:accepted。
-         *
-         * 保留此處是為了讓雙方狀態
-         * 在未來擴充時可以共用。
-         */
-
-        const callState =
-            ShuttleCall.getState();
-
-        if (
-            data.call_id ===
-            callState.activeCallId
-        ) {
-
-            ShuttleCall.setState(
-                "CONNECTED"
-            );
-
-
-            if (!callState.callStartedAt) {
-
-                ShuttleCall.setStarted();
-
-            }
-
-
-            updateCallWindow();
-
-            ShuttleCall.startTimer();
+        if (data.call_id !== callState.activeCallId) {
+            return;
         }
 
+        // 接聽前先判斷本端是否為發起方
+        const wasCalling = callState.activeCallState === "CALLING";
+
+        ShuttleCall.setState("CONNECTED");
+
+        if (!callState.callStartedAt) {
+            ShuttleCall.setStarted();
+        }
+
+        updateCallWindow();
+        ShuttleCall.startTimer();
+
+        // 本端發起通話：收到接聽確認後建立 WebRTC Offer
+        if (wasCalling) {
+            try {
+                await ShuttleWebRTC.startAsCaller({
+                    webSocket: shuttleWebSocket,
+                    callId: data.call_id,
+                    onRemoteStream: handleDriverRemoteStream,
+                    role: "driver"
+                });
+            } catch (error) {
+                console.error("[WebRTC] 駕駛發起語音失敗:", error);
+                closeCallWindow();
+            }
+        }
 
         return;
+    }
+
+    // Call Rejected
+    if (data.type === "call:rejected") {
+        const callState = ShuttleCall.getState();
+
+        if (data.call_id === callState.activeCallId) {
+            closeCallWindow();
+        }
+
+        return;
+    }
+
+    // Call Ended
+    if (data.type === "call:ended") {
+        const callState = ShuttleCall.getState();
+
+        if (
+            !callState.activeCallId ||
+            data.call_id === callState.activeCallId
+        ) {
+            closeCallWindow();
+        }
+
+        return;
+    }
+
+    // Call Error
+    if (data.type === "call:error") {
+        console.warn("[Call] 通話錯誤:", data);
+        closeCallWindow();
+        return;
+    }
+
+    // Force Logout
+    if (data.type === "auth:force-logout") {
+        console.warn("[Shuttle WebSocket] 收到強制登出");
+
+        if (isNativeShuttleApp) {
+            window.AndroidShuttleBridge.stopTracking();
+        } else {
+            ShuttleGPS.stop();
+        }
+
+        if (shuttleWebSocket) {
+            shuttleWebSocket.close();
+            shuttleWebSocket = null;
+        }
+
+        closeCallWindow();
+
+        if (typeof handleUnauthorized === "function") {
+            handleUnauthorized();
+        } else {
+            window.location.href = "../index.html";
+        }
     }
 
 
@@ -1702,7 +1711,45 @@ function updateCallWindow() {
 
     }
 
+    // ========================================
+    // Outgoing Call
+    // ========================================
 
+    if (callState.activeCallState === "CALLING") {
+        if (stateElement) {
+            stateElement.textContent = "呼叫中";
+        }
+
+        if (statusElement) {
+            statusElement.textContent = "正在呼叫同路線監控端，請稍候";
+        }
+
+        if (timerElement) {
+            timerElement.textContent = "00:00";
+        }
+
+        if (actionsElement) {
+            actionsElement.innerHTML = `
+            <button
+                id="shuttle-call-hangup"
+                type="button"
+                class="shuttle-call-button hangup"
+                ${callState.activeCallId ? "" : "disabled"}
+            >
+                取消呼叫
+            </button>
+        `;
+
+            const hangupButton =
+                document.getElementById("shuttle-call-hangup");
+
+            if (hangupButton) {
+                hangupButton.addEventListener("click", () => {
+                    hangupActiveCall();
+                });
+            }
+        }
+    }
     // ========================================
     // Connected
     // ========================================
@@ -2088,6 +2135,76 @@ if (logoutButton) {
             window.location.href =
                 "../index.html";
         }
+    );
+}
+function callRouteMonitor() {
+    if (!shuttleDriverRoute) {
+        console.warn("[Call] 尚未取得駕駛路線");
+        return;
+    }
+
+    if (
+        !/^營區開放_[A-E]路線$/.test(
+            shuttleDriverRoute
+        )
+    ) {
+        console.warn("[Call] 駕駛路線無效");
+        return;
+    }
+
+    if (
+        !shuttleWebSocket ||
+        shuttleWebSocket.readyState !== WebSocket.OPEN
+    ) {
+        console.warn("[Call] WebSocket 尚未連線");
+        return;
+    }
+
+    const monitors = shuttleOnlineUsers.filter(user =>
+        Number(user.role_id) === 6 &&
+        user.user_id &&
+        user.access_context === shuttleDriverRoute
+    );
+
+    if (monitors.length !== 1) {
+        console.warn(
+            "[Call] 同路線監控帳號數量不是 1，無法自動選擇",
+            {
+                route: shuttleDriverRoute,
+                count: monitors.length
+            }
+        );
+        return;
+    }
+
+    const monitor = monitors[0];
+    const currentCall = ShuttleCall.getState();
+
+    if (currentCall.activeCallState) {
+        console.warn("[Call] 已有進行中的通話或呼叫");
+        return;
+    }
+
+    ShuttleCall.setCall({
+        callId: null,
+        target: monitor,
+        state: "CALLING"
+    });
+
+    updateCallWindow();
+
+    shuttleWebSocket.send(JSON.stringify({
+        type: "call",
+        target_user_id: monitor.user_id
+    }));
+}
+const callRouteMonitorButton =
+    document.getElementById("call-route-monitor");
+
+if (callRouteMonitorButton) {
+    callRouteMonitorButton.addEventListener(
+        "click",
+        callRouteMonitor
     );
 }
 console.log(

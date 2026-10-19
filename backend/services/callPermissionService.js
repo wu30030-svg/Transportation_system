@@ -1,5 +1,5 @@
-﻿function canCall(caller, target) {
-
+﻿
+function canCall(caller, target) {
     if (!caller || !target) {
         return {
             allowed: false,
@@ -7,26 +7,28 @@
         };
     }
 
-    // 只有高階監控可以主動發起呼叫
-    if (Number(caller.role_id) !== 6) {
+    const callerRole = Number(caller.role_id);
+    const targetRole = Number(target.role_id);
+
+    // 僅允許駕駛（4）與監控（6）互相呼叫。
+    const allowedRoles =
+        (callerRole === 4 && targetRole === 6) ||
+        (callerRole === 6 && targetRole === 4);
+
+    if (!allowedRoles) {
         return {
             allowed: false,
-            reason: "CALLER_NOT_ALLOWED"
+            reason: "CALLER_OR_TARGET_NOT_ALLOWED"
         };
     }
 
-    // 目標必須是駕駛
-    if (Number(target.role_id) !== 4) {
-        return {
-            allowed: false,
-            reason: "TARGET_NOT_ALLOWED"
-        };
-    }
+    // 雙方必須有相同且有效的路線工作區。
+    const validRoutePattern = /^營區開放_[A-E]路線$/;
 
-    // 必須存在相同的管理範圍
     if (
-        !caller.access_context ||
-        !target.access_context ||
+        typeof caller.access_context !== "string" ||
+        typeof target.access_context !== "string" ||
+        !validRoutePattern.test(caller.access_context) ||
         caller.access_context !== target.access_context
     ) {
         return {
