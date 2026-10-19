@@ -880,6 +880,53 @@ Header — Mobile
     font-variant-numeric: tabular-nums;
 }
 
+/* 接聽、拒絕按鈕 */
+.shuttle-call-accept,
+.shuttle-call-reject {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 16px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.08s ease;
+}
+
+/* 綠色接聽 */
+.shuttle-call-accept {
+    border: 1px solid rgba(46, 204, 113, 0.55);
+    background: rgba(46, 204, 113, 0.14);
+    color: #2ecc71;
+}
+
+.shuttle-call-accept:hover {
+    border-color: rgba(46, 204, 113, 0.8);
+    background: rgba(46, 204, 113, 0.24);
+}
+
+/* 紅色拒絕 */
+.shuttle-call-reject {
+    border: 1px solid rgba(224, 82, 82, 0.4);
+    background: rgba(224, 82, 82, 0.1);
+    color: #e05252;
+}
+
+.shuttle-call-reject:hover {
+    border-color: rgba(224, 82, 82, 0.65);
+    background: rgba(224, 82, 82, 0.18);
+}
+
+/* 按下效果 */
+.shuttle-call-accept:active,
+.shuttle-call-reject:active {
+    transform: scale(0.985);
+}
+
 .shuttle-call-hangup {
     width: 100%;
     height: 44px;

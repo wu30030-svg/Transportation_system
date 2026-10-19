@@ -701,12 +701,20 @@ function createCallWindow() {
             <div id="shuttle-call-timer" class="shuttle-call-timer">00:00</div>
 
             <div class="shuttle-call-actions">
-                <button id="shuttle-call-accept" type="button">
-                    接聽
+                <button
+                    id="shuttle-call-accept"
+                    class="shuttle-call-accept"
+                    type="button">
+                    📞 接聽
                 </button>
-                <button id="shuttle-call-reject" type="button">
-                    拒絕
+
+                <button
+                    id="shuttle-call-reject"
+                    class="shuttle-call-reject"
+                    type="button">
+                    ✕ 拒絕
                 </button>
+                
                 <button
                     id="shuttle-call-hangup"
                     type="button"
