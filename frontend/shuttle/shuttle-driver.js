@@ -100,14 +100,14 @@ async function loadShuttleDriverIdentity() {
                 vehicleName = `新烏日線 ${number - 10}`;
             } else if (number >= 61 && number <= 110) {
                 vehicleName = `水湳線 ${number - 60}`;
-            } else if (number >= 111 && number <= 125) {
+            } else if (number >= 111 && number <= 120) {
                 vehicleName = `嶺東科大線 ${number - 110}`;
-            } else if (number >= 126 && number <= 135) {
-                vehicleName = `營內1號門接駁線 ${number - 125}`;
-            } else if (number >= 136 && number <= 141) {
-                vehicleName = `復康巴士 ${number - 135}`;
-            } else if (number >= 142 && number <= 152) {
-                vehicleName = `待命車輛 ${number - 141}`;
+            } else if (number >= 121 && number <= 130) {
+                vehicleName = `營內1號門接駁線 ${number - 120}`;
+            } else if (number >= 131 && number <= 136) {
+                vehicleName = `復康巴士 ${number - 130}`;
+            } else if (number >= 137 && number <= 152) {
+                vehicleName = `待命車輛 ${number - 136}`;
             }
         }
 

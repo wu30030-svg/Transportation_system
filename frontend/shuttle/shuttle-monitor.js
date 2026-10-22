@@ -77,20 +77,20 @@ window.getShuttleDisplayName = function (personnelNumber) {
         return `湳 ${n - 60}`;
     }
 
-    if (n >= 111 && n <= 125) {
+    if (n >= 111 && n <= 120) {
         return `副 ${n - 110}`;
     }
 
-    if (n >= 126 && n <= 135) {
-        return `營 ${n - 125}`;
+    if (n >= 121 && n <= 130) {
+        return `營 ${n - 120}`;
     }
 
-    if (n >= 136 && n <= 141) {
-        return `復 ${n - 135}`;
+    if (n >= 131 && n <= 136) {
+        return `復 ${n - 130}`;
     }
 
-    if (n >= 142 && n <= 152) {
-        return `備 ${n - 141}`;
+    if (n >= 137 && n <= 152) {
+        return `備 ${n - 136}`;
     }
 
     return personnelNumber;
